@@ -2,34 +2,62 @@
 
 Library for Java programs to combine error messages and return values in a single return object, without using Exceptions.
 
-# Why?
+[![dev branch build](https://travis-ci.com/groboclown/java-retval.svg?branch=dev)](https://travis-ci.com/github/groboclown/java-retval) [![license: MIT](https://img.shields.io/badge/license-MIT-brightgreen)](https://github.com/groboclown/java-retval)
+
+
+## Why?
 
 Sometimes, users want to know all the problems encountered by a program without going through the cycle of run, fix, run.  Sometimes, you want to write code that is error aware without using exceptions to handle well known problems states.
 
 Exceptions have their use, and this isn't intended to replace them.  However, they are limited in what they can do, and generally can make code less user-friendly by showing stack traces instead of human-readable messages.
 
-# How To Use
 
-The library has 3 basic types:
+## What It Offers
+
+The library provides acutely null aware classes by using the `javax.annotation.Nullable` and `javax.annotation.Nonnull` annotations, and giving names to the classes to distinguish them.  You may find development easier if you use an IDE that is `null` annotation aware.
+
+The library has 3 fundamental classes:
 
 * `RetVoid` - a basic holder for problems.
 * `RetVal` - contains problems or a non-null value.
 * `RetNullable` - contains problems or a nullable value.
 
-The types are acutely null aware by using the `javax.annotation.Nullable` and `javax.annotation.Nonnull` annotations.
+These `Ret*` classes contain either an error state or a possible value; they cannot contain both.  The auxiliary methods help to make the program flow easier to work with them. 
 
-In all these types, the basic flow involves first collecting information that could have problems, then using that data, if it is problem-free, to perform other operations.
+Additionally, there are 3 related classes, `WarningVoid`, `WarningVal`, and `WarningNullable`, which have similar semantics to the `Ret*`, but allow for both containing problems and values.
+
+The library uses a method naming convention:
+
+* Static methods used as constructors start with `from`.
+* Methods that collect information and return the called object start with `with`.  Sometimes, due to object immutability, this will return a different object, but the semantics of "collecting information" still apply.
+* Methods that run an action in a parameter and return a different value start with `then`.
+* Methods that return non-null value variations have no special suffix.
+* Methods that return nullable value variations have a `Nullable` suffix.
+* Methods that use a function or supplier argument which returns a raw value (not wrapped in a `Ret*`) have a `Value` suffix.
+* Methods that return objects without a value have a `Void` suffix.
+* Methods that perform an operation conditionally based upon the problem state on a `Runnable` argument take the `Run` suffix.
+
+
+## How To Use
+
+In all the basic `Ret*` types, the basic flow involves first collecting information that could have problems, then using that data, if it is problem-free, to perform other operations.
 
 ```java
 class ServiceRunner {
-    public static RetVal<ServiceRunner> load(File configFile) {
+    public static RetVal<ServiceRunner> loadService(String serviceMode) {
         return
-            readConfig(configFile)
+            loadConfig(serviceMode)
             .then(ServiceRunner::new);
     }
 
-    static RetVal<Configuration> readConfig(File configFile) {
-        // ...
+    static RetVal<Configuration> loadConfig(String serviceMode) {
+        if ("daemon".equals(serviceMode)) {
+            return RetVal.ok(Configuration.loadDaemon());
+        } else if ("active".equals(serviceMode)) {
+            return RetVal.ok(Configuration.loadActive());
+        } else {
+            return RetVal.error(LocalizedProblem.from("Invalid service mode"));
+        }
     }
     
     ServiceRunner(Configuration config) {
@@ -90,7 +118,7 @@ class WebRunner {
         RetCollector
                 // The collector keeps gathering all the information,
                 // even if the one before it encountered a problem.
-                .start(createToken(settingsDir), access::setJwtToken)
+                .from(createToken(settingsDir), access::setJwtToken)
                 .with(readUrl(settingsDir), access::setUrl)
                 
                 // The "then" evaluates the results only if they all ran successfully.
@@ -123,3 +151,36 @@ class WebRunner {
     }
 }
 ```
+
+
+## Closable Values
+
+Some situations may arise where the returned value must be closed, such as with an I/O type.  The simple approach is to require the closable value be passed as an argument to the creator.
+
+```java
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.function.Function;
+
+class FileUtil {
+    static <T> RetVal<T> processContents(File file, Function<String, T> func) {
+        try (FileReader reader = new FileReader(file, "UTF-8")) {
+            return func.apply(readFully(reader));
+        } catch (IOException e) {
+            return RetVal.error(FileProblem.from(file, e));
+        }
+    }
+}
+```
+
+
+## Leave No Check Unturned
+
+By default, the library will silently ignore Problems that haven't been checked.  Leaving these objects unchecked can be a source of subtle bugs, where problems that may occur in some configuration won't be passed on down stream.
+
+However, you can set the environment variable `RETVAL_MONITOR_DEBUG` to `true` to enable logging when a tracked closeable or problem collection is garbage collected but not checked.  This allows for better inspection of where these problem areas may live.  Problems are sent to the Java logging mechanism's warning level, along with a stack trace for where the object was first created.
+
+
+## Developing The Library
+
+To develop the library, you'll need to fork the repository and submit changes back to the main project.  All changes you make will need to first have a good build.

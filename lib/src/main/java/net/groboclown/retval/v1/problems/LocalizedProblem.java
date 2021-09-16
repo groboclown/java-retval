@@ -5,6 +5,7 @@ import net.groboclown.retval.v1.Problem;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
+import java.util.Objects;
 
 /**
  * Problem with a simple, localized message text.
@@ -20,10 +21,10 @@ public class LocalizedProblem implements Problem {
      * @return the problem value.
      */
     public static LocalizedProblem from(@Nonnull final String localizedMessage) {
-        return new LocalizedProblem(localizedMessage);
+        return new LocalizedProblem(Objects.requireNonNull(localizedMessage));
     }
 
-    private LocalizedProblem(String localized) {
+    private LocalizedProblem(@Nonnull final String localized) {
         this.localized = localized;
     }
 
@@ -36,5 +37,24 @@ public class LocalizedProblem implements Problem {
     @Override
     public String toString() {
         return localMessage();
+    }
+
+    @Override
+    public int hashCode() {
+        return this.localized.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (other == null) {
+            return false;
+        }
+        if (other == this) {
+            return true;
+        }
+        if (LocalizedProblem.class.equals(other.getClass())) {
+            return this.localized.equals(((LocalizedProblem) other).localized);
+        }
+        return false;
     }
 }

@@ -13,14 +13,18 @@ import java.util.function.Supplier;
 public class RetCollector {
     private final List<Problem> problems = new ArrayList<>();
 
+    private RetCollector() {
+        // Use static constructors.
+    }
+
 
     @Nonnull
-    public static RetCollector start(@Nonnull ProblemContainer... containers) {
+    public static RetCollector from(@Nonnull final ProblemContainer... containers) {
         return new RetCollector().with(containers);
     }
 
     @Nonnull
-    public static <T> RetCollector start(
+    public static <T> RetCollector fromValue(
             @Nonnull final RetVal<T> value,
             @Nonnull final NonnullConsumer<T> setter
     ) {
@@ -28,7 +32,7 @@ public class RetCollector {
     }
 
     @Nonnull
-    public static <T> RetCollector start(
+    public static <T> RetCollector fromValue(
             @Nonnull final RetNullable<T> value,
             @Nonnull final Consumer<T> setter
     ) {
@@ -37,8 +41,8 @@ public class RetCollector {
 
 
     @Nonnull
-    public RetCollector with(@Nonnull ProblemContainer... containers) {
-        for (ProblemContainer container: containers) {
+    public RetCollector with(@Nonnull final ProblemContainer... containers) {
+        for (final ProblemContainer container: containers) {
             this.problems.addAll(container.anyProblems());
         }
         return this;
@@ -68,7 +72,7 @@ public class RetCollector {
         return this;
     }
 
-    public <T> RetVal<T> thenValue(@Nonnull final Supplier<T> getter) {
+    public <T> RetVal<T> thenValue(@Nonnull final NonnullSupplier<T> getter) {
         if (this.problems.isEmpty()) {
             return RetVal.ok(getter.get());
         }
@@ -94,5 +98,13 @@ public class RetCollector {
             return RetNullable.ok(getter.get());
         }
         return RetNullable.error(this.problems);
+    }
+
+    public RetVoid thenRun(@Nonnull final Runnable runner) {
+        if (this.problems.isEmpty()) {
+            runner.run();
+            return RetVoid.ok();
+        }
+        return RetVoid.fromProblemSets(this.problems);
     }
 }

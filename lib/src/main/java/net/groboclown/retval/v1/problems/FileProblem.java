@@ -38,12 +38,24 @@ public class FileProblem implements SourcedProblem {
      */
     @Nonnull
     public static FileProblem from(@Nonnull final File file, @Nonnull final IOException ex) {
+        return from(file.getPath(), ex);
+    }
+
+    /**
+     * Create a file problem from a file object and an I/O exception.
+     *
+     * @param source source of the problem
+     * @param ex exception generated from the operation.
+     * @return the file problem object.
+     */
+    @Nonnull
+    public static FileProblem from(@Nonnull final String source, @Nonnull final IOException ex) {
         return new FileProblem(
-                file.getPath(),
+                source,
                 ex.getLocalizedMessage() == null
                         ? (ex.getMessage() == null
-                            ? (file.getPath() + " caused an error")
-                            : ex.getMessage())
+                        ? (source + " caused an error")
+                        : ex.getMessage())
                         : ex.getLocalizedMessage()
         );
     }

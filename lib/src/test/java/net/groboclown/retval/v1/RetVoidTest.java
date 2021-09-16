@@ -11,30 +11,39 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RetVoidTest {
     @Test
-    void withProblemSets_none() {
-        RetVoid ret = RetVoid.withProblemSets();
-        assertSame(
-                RetVoid.OK,
-                ret
+    void fromProblemSets_none() {
+        final RetVoid ret = RetVoid.fromProblemSets();
+        assertEquals(
+                List.of(),
+                ret.anyProblems()
         );
     }
 
     @Test
-    void withProblemSets_empty() {
-        RetVoid ret = RetVoid.withProblemSets(List.of(), List.of());
-        assertSame(
-                RetVoid.OK,
-                ret
+    void fromProblemSets_empty() {
+        final RetVoid ret = RetVoid.fromProblemSets(List.of(), List.of());
+        assertEquals(
+                List.of(),
+                ret.anyProblems()
         );
     }
 
     @Test
-    void withProblemSets_some() {
+    void fromProblemSets_some() {
         final Problem p1 = LocalizedProblem.from("1");
         final Problem p2 = LocalizedProblem.from("2");
-        RetVoid ret = RetVoid.withProblemSets(List.of(p1), List.of(p2));
+        final RetVoid ret = RetVoid.fromProblemSets(List.of(p1), List.of(p2));
         assertEquals(
                 List.of(p1, p2),
+                ret.anyProblems()
+        );
+    }
+
+    @Test
+    void errors_empty() {
+        final RetVoid ret = RetVoid.errors();
+        assertEquals(
+                List.of(),
                 ret.anyProblems()
         );
     }

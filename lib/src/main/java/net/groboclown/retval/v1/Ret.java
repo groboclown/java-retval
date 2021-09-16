@@ -7,11 +7,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+
 /**
  * Utility class for working with collections of return values.
  */
 public class Ret {
     public static final List<Problem> NO_PROBLEMS = Collections.emptyList();
+
+    private Ret() {
+        // Prevent instantiation.
+    }
 
     /**
      * Join the array of lists of problems into a single list.
@@ -93,6 +98,22 @@ public class Ret {
 
 
     /**
+     * Joins problems into a list of problems.  This requires at least one problem.
+     *
+     * @param problem the first problem.
+     * @param problems vararg of optional problem values.
+     * @return all the problems in a single, immutable list.
+     */
+    @Nonnull
+    public static List<Problem> joinRequiredProblems(@Nonnull final Problem problem, final Problem... problems) {
+        final List<Problem> all = new ArrayList<>(1 + problems.length);
+        all.add(problem);
+        all.addAll(List.of(problems));
+        return Collections.unmodifiableList(all);
+    }
+
+
+    /**
      * Enforce that the list of problems is empty by throwing an
      * IllegalStateException if it contains problems.
      *
@@ -123,5 +144,33 @@ public class Ret {
             throw new IllegalStateException("contains no problems");
         }
         return problems;
+    }
+
+
+    /**
+     * Join the problem's {@link Problem#localMessage()} text into a single string, joined by the
+     * joinText.  If the problem list is empty, then an empty string is returned.
+     *
+     * @param joinText text used to join together the problems.
+     * @param problems list of problems to join together.
+     * @return the joined text, or an empty string if the list of problems is empty.
+     */
+    @Nonnull
+    public static String joinProblemMessages(
+            @Nonnull final String joinText, @Nonnull final Collection<Problem> problems
+    ) {
+        final StringBuilder ret = new StringBuilder();
+        boolean first = true;
+        for (final Problem problem: problems) {
+            if (first) {
+                first = false;
+            } else {
+                ret.append(joinText);
+            }
+            ret.append(problem.localMessage());
+        }
+        // Memory inefficient, but faster.
+        // The general usage of this method keeps the return value around for short times.
+        return ret.toString();
     }
 }

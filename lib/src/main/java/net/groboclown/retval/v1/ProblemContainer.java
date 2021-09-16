@@ -45,4 +45,15 @@ public interface ProblemContainer {
      */
     @Nonnull
     Collection<Problem> validProblems();
+
+    /**
+     * Return the problems as a single string, which combines the {@link Object#toString()} output of each
+     * problem with the given joining string parameter.  If this object contains no problems, then an empty string
+     * is returned instead.
+     *
+     * @param joinedWith the text to join multiple problem strings together.
+     * @return the combined text of the problems, or an empty string if there are no problems.
+     */
+    @Nonnull
+    String debugProblems(@Nonnull String joinedWith);
 }
