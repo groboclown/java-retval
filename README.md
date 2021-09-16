@@ -1,6 +1,6 @@
 # retval
 
-Library for Java programs to combine error messages and return values in a single return object, without using Exceptions.
+Library for Java 9+ programs to combine error messages and return values in a single return object, without using Exceptions.
 
 [![dev branch build](https://travis-ci.com/groboclown/java-retval.svg?branch=dev)](https://travis-ci.com/github/groboclown/java-retval) [![license: MIT](https://img.shields.io/badge/license-MIT-brightgreen)](https://github.com/groboclown/java-retval)
 
@@ -14,21 +14,19 @@ Exceptions have their use, and this isn't intended to replace them.  However, th
 
 ## What It Offers
 
-The library provides acutely null aware classes by using the `javax.annotation.Nullable` and `javax.annotation.Nonnull` annotations, and giving names to the classes to distinguish them.  You may find development easier if you use an IDE that is `null` annotation aware.
-
 The library has 3 fundamental classes:
 
 * `RetVoid` - a basic holder for problems.
 * `RetVal` - contains problems or a non-null value.
 * `RetNullable` - contains problems or a nullable value.
 
-These `Ret*` classes contain either an error state or a possible value; they cannot contain both.  The auxiliary methods help to make the program flow easier to work with them. 
+These `Ret*` classes contain either an error state or a possible value; they cannot contain both.  The auxiliary methods help to make the program flow easier to work with them.   These classes are acutely `null` aware by using the `javax.annotation.Nullable` and `javax.annotation.Nonnull` annotations, and giving names to the classes to distinguish them.  You may find development easier if you use an IDE that is `null` annotation aware.
 
 Additionally, there are 3 related classes, `WarningVoid`, `WarningVal`, and `WarningNullable`, which have similar semantics to the `Ret*`, but allow for both containing problems and values.
 
 The library uses a method naming convention:
 
-* Static methods used as constructors start with `from`.
+* Static methods used as constructors start with `from`.  The `Ret*` classes have `ok` to create a non-problem value, `error` for adding problem values into the instance, and `errors` to combine multiple `Ret*` values with errors.
 * Methods that collect information and return the called object start with `with`.  Sometimes, due to object immutability, this will return a different object, but the semantics of "collecting information" still apply.
 * Methods that run an action in a parameter and return a different value start with `then`.
 * Methods that return non-null value variations have no special suffix.
@@ -152,6 +150,11 @@ class WebRunner {
 }
 ```
 
+The [`usecases`](lib/src/test/java/net/groboclown/retval/usecases) package in the test directory contains some complete examples of different ways to use this library.
+
+* [`readfile`](lib/src/test/java/net/groboclown/retval/usecases/readfile/package-info.java) shows converting exceptions into something the end user can consume.
+* [`configuration`](lib/src/test/java/net/groboclown/retval/usecases/configuration/package-info.java) defines a complicated setup, where the configuration definition allows for a messy setup (the user doesn't need to make a 100% pristine file), and only validating what is directly requested.  Along with this, the configuration definition doesn't line up 1-to-1 with the data model.  This shows examples of `RetVal` and continuations, `RetCollector` to gather multiple problem groups, `ValueAccumulator` to gather a list of values, where each one may have a validation problem, and a `WarningVal` for maintaining a value in a partial state of construction, whose values can be useful for loading more data for problem inspections.
+
 
 ## Closable Values
 
@@ -184,3 +187,18 @@ However, you can set the environment variable `RETVAL_MONITOR_DEBUG` to `true` t
 ## Developing The Library
 
 To develop the library, you'll need to fork the repository and submit changes back to the main project.  All changes you make will need to first have a good build.
+
+
+### What's Left To Implement
+
+* Fill in the remaining placeholder functions.
+* Add in JavaDoc everywhere.  This is partially done.
+* Get up to 100% code coverage in tests.
+* Add in Closeable support for the `ret` values.  This will require careful use of the `CloseableCollection`.
+
+
+### Code Style Guide
+
+The library uses a style check based off of the Google standard.  There are more local variations that, though they conform to the standard, don't look like normal code.
+
+Each `usecase` test must include a `package-info.java` file to describe the purpose of the use case.  They should also be described in this file.

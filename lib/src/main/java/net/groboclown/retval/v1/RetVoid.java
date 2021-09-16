@@ -1,14 +1,13 @@
 // Released under the MIT License.
 package net.groboclown.retval.v1;
 
-import net.groboclown.retval.v1.impl.NoOpCheckMonitor;
-
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.Immutable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.Immutable;
+import net.groboclown.retval.v1.impl.NoOpCheckMonitor;
 
 
 /**
@@ -27,6 +26,11 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
     private final List<Problem> problems;
     private final CheckMonitor.CheckableListener listener;
 
+    /**
+     * Return a void object with no problems.
+     *
+     * @return a no-problem void object.
+     */
     @Nonnull
     public static RetVoid ok() {
         if (CheckMonitor.getInstance().isTraceEnabled()) {
@@ -45,7 +49,7 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
      */
     @SafeVarargs
     @Nonnull
-    public static RetVoid fromProblemSets(final Iterable<Problem>... problemSets) {
+    public static RetVoid error(final Iterable<Problem>... problemSets) {
         // Simple, easy check.
         if (problemSets.length <= 0) {
             return ok();
@@ -57,6 +61,14 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
         return new RetVoid(all);
     }
 
+    /**
+     * Create a RetVoid containing the passed-in problems.  If there was
+     * no problem in any of the arguments, then this will return a no-problem
+     * value.
+     *
+     * @param problems a list of problems.
+     * @return a new void instance, possibly without problems.
+     */
     @Nonnull
     public static RetVoid error(final Problem... problems) {
         // Simple, easy check.
@@ -66,9 +78,17 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
         return new RetVoid(List.of(problems));
     }
 
+    /**
+     * Create a RetVoid containing the passed-in problems.  If there was
+     * no problem in any of the arguments, then this will return a no-problem
+     * value.
+     *
+     * @param rets a list of problem containers.
+     * @return a new void instance, possibly without problems.
+     */
     @SafeVarargs
     @Nonnull
-    public static RetVoid fromRetSets(final Iterable<ProblemContainer>... rets) {
+    public static RetVoid errors(final Iterable<ProblemContainer>... rets) {
         // Simple, easy check.
         if (rets.length <= 0) {
             return ok();
@@ -80,13 +100,22 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
         return new RetVoid(all);
     }
 
+    /**
+     * Create a RetVoid containing the passed-in problems.  If there was
+     * no problem in any of the arguments, then this will return a no-problem
+     * value.
+     *
+     * @param ret a problem container
+     * @param rets an optional list of problem containers.
+     * @return a new void instance, possibly without problems.
+     */
     @Nonnull
-    public static RetVoid errors(final ProblemContainer... rets) {
+    public static RetVoid errors(final ProblemContainer ret, final ProblemContainer... rets) {
         // Simple, easy check.
         if (rets.length <= 0) {
             return ok();
         }
-        final List<Problem> all = Ret.joinRetProblems(rets);
+        final List<Problem> all = Ret.joinRetProblems(ret, rets);
         if (all.isEmpty()) {
             return ok();
         }
@@ -104,6 +133,7 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
     // pass known immutable lists.
     RetVoid(@Nonnull final List<Problem> problems) {
         // This must be ensured on entry as immutable.
+        // For RetVoid, the problem list may be empty.
         this.problems = problems;
         this.listener = CheckMonitor.getInstance().registerErrorInstance(this);
     }
@@ -161,7 +191,9 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
 
     @Nonnull
     @Override
-    public <R> RetNullable<R> thenNullable(@Nonnull final NonnullSupplier<RetNullable<R>> supplier) {
+    public <R> RetNullable<R> thenNullable(
+            @Nonnull final NonnullSupplier<RetNullable<R>> supplier
+    ) {
         return thenWrapNullable(supplier);
     }
 
@@ -194,7 +226,8 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
      */
     @Nonnull
     private <R> R thenWrap(
-            @Nonnull final NonnullSupplier<R> supplier, @Nonnull final NonnullSupplier<R> errorFactory
+            @Nonnull final NonnullSupplier<R> supplier,
+            @Nonnull final NonnullSupplier<R> errorFactory
     ) {
         // Pass the checking ownership to the created object.
         this.listener.onChecked();
@@ -206,7 +239,9 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
     }
 
     @Nonnull
-    protected <R> RetNullable<R> thenWrapNullable(@Nonnull final NonnullSupplier<RetNullable<R>> supplier) {
+    protected <R> RetNullable<R> thenWrapNullable(
+            @Nonnull final NonnullSupplier<RetNullable<R>> supplier
+    ) {
         // Be as memory efficient as possible.
         return thenWrap(supplier, () -> new RetNullable<>(this.problems));
     }
@@ -238,7 +273,9 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
 
     @Nonnull
     @Override
-    public <R> RetNullable<R> withNullable(@Nonnull final NonnullSupplier<RetNullable<R>> supplier) {
+    public <R> RetNullable<R> withNullable(
+            @Nonnull final NonnullSupplier<RetNullable<R>> supplier
+    ) {
         return withWrapper(supplier, RetNullable::new);
     }
 
@@ -263,7 +300,8 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
      */
     @Nonnull
     private <R extends ProblemContainer> R withWrapper(
-            @Nonnull final NonnullSupplier<R> supplier, @Nonnull final NonnullFunction<List<Problem>, R> errorFactory
+            @Nonnull final NonnullSupplier<R> supplier,
+            @Nonnull final NonnullFunction<List<Problem>, R> errorFactory
     ) {
         // Pass the checking ownership to the created object.
         this.listener.onChecked();

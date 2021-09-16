@@ -1,15 +1,13 @@
 // Released under the MIT License. 
-package net.groboclown.retval.v1.usecases;
+package net.groboclown.retval.usecases.readfile;
 
-
-import net.groboclown.retval.v1.RetVal;
-import net.groboclown.retval.v1.problems.FileProblem;
-
-import javax.annotation.Nonnull;
-import javax.annotation.WillClose;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Properties;
+import javax.annotation.Nonnull;
+import javax.annotation.WillClose;
+import net.groboclown.retval.v1.RetVal;
+import net.groboclown.retval.v1.problems.FileProblem;
 
 /**
  * Use case: read the contents of a file or readable file.
@@ -30,7 +28,9 @@ public class ReadFileContents {
      */
     @WillClose
     @Nonnull
-    public static RetVal<String> readFully(@Nonnull final String sourceName, @Nonnull final Reader reader) {
+    public static RetVal<String> readFully(
+            @Nonnull final String sourceName, @Nonnull final Reader reader
+    ) {
         try (reader) {
             final StringBuilder ret = new StringBuilder();
             final char[] buff = new char[BUFFER_SIZE];
@@ -53,7 +53,9 @@ public class ReadFileContents {
      */
     @WillClose
     @Nonnull
-    public static RetVal<Properties> readProperties(@Nonnull final String sourceName, @Nonnull final Reader reader) {
+    public static RetVal<Properties> readProperties(
+            @Nonnull final String sourceName, @Nonnull final Reader reader
+    ) {
         try (reader) {
             final Properties ret = new Properties();
             ret.load(reader);

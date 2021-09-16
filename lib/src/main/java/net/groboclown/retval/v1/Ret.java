@@ -1,11 +1,11 @@
 // Released under the MIT License.
 package net.groboclown.retval.v1;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nonnull;
 
 
 /**
@@ -31,7 +31,7 @@ public class Ret {
             return NO_PROBLEMS;
         }
         final List<Problem> all = new ArrayList<>();
-        for (final Iterable<Problem> problems: problemSets) {
+        for (final Iterable<Problem> problems : problemSets) {
             if (problems != null) {
                 for (final Problem problem : problems) {
                     all.add(problem);
@@ -57,7 +57,7 @@ public class Ret {
             return NO_PROBLEMS;
         }
         final List<Problem> all = new ArrayList<>();
-        for (final Iterable<ProblemContainer> rets: retSets) {
+        for (final Iterable<ProblemContainer> rets : retSets) {
             if (rets != null) {
                 for (final ProblemContainer ret : rets) {
                     if (ret != null) {
@@ -76,18 +76,19 @@ public class Ret {
     /**
      * Joins {@link ProblemContainer} instances into a list of problems.
      *
-     * @param rets vararg of Ret values.
+     * @param ret Ret value.
+     * @param rets vararg of optional Ret values.
      * @return all the problems in a single, immutable list.
      */
     @Nonnull
-    public static List<Problem> joinRetProblems(final ProblemContainer... rets) {
-        if (rets.length <= 0) {
-            return NO_PROBLEMS;
-        }
-        final List<Problem> all = new ArrayList<>();
-        for (final ProblemContainer ret : rets) {
-            if (ret != null) {
-                all.addAll(ret.anyProblems());
+    public static List<Problem> joinRetProblems(
+            @Nonnull final ProblemContainer ret,
+            final ProblemContainer... rets
+    ) {
+        final List<Problem> all = new ArrayList<>(ret.anyProblems());
+        for (final ProblemContainer container : rets) {
+            if (container != null) {
+                all.addAll(container.anyProblems());
             }
         }
         if (all.isEmpty()) {
@@ -105,7 +106,9 @@ public class Ret {
      * @return all the problems in a single, immutable list.
      */
     @Nonnull
-    public static List<Problem> joinRequiredProblems(@Nonnull final Problem problem, final Problem... problems) {
+    public static List<Problem> joinRequiredProblems(
+            @Nonnull final Problem problem, final Problem... problems
+    ) {
         final List<Problem> all = new ArrayList<>(1 + problems.length);
         all.add(problem);
         all.addAll(List.of(problems));
@@ -118,15 +121,12 @@ public class Ret {
      * IllegalStateException if it contains problems.
      *
      * @param problems list of problems to check.
-     * @return the argument
      * @throws IllegalStateException if the problem list is not empty.
      */
-    @Nonnull
-    public static Collection<Problem> enforceNoProblems(@Nonnull final Collection<Problem> problems) {
+    public static void enforceNoProblems(@Nonnull final Collection<Problem> problems) {
         if (! problems.isEmpty()) {
             throw new IllegalStateException("contains problems");
         }
-        return problems;
     }
 
 
@@ -139,7 +139,9 @@ public class Ret {
      * @throws IllegalStateException if the problem list is not empty.
      */
     @Nonnull
-    public static Collection<Problem> enforceHasProblems(@Nonnull final Collection<Problem> problems) {
+    public static Collection<Problem> enforceHasProblems(
+            @Nonnull final Collection<Problem> problems
+    ) {
         if (problems.isEmpty()) {
             throw new IllegalStateException("contains no problems");
         }
@@ -161,7 +163,7 @@ public class Ret {
     ) {
         final StringBuilder ret = new StringBuilder();
         boolean first = true;
-        for (final Problem problem: problems) {
+        for (final Problem problem : problems) {
             if (first) {
                 first = false;
             } else {

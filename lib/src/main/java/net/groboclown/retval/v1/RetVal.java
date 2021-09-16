@@ -1,14 +1,13 @@
 // Released under the MIT License.
 package net.groboclown.retval.v1;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
-
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * A non-null value holder version of a problem container.
@@ -41,7 +40,10 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
      * @return an error RetVal.
      */
     @Nonnull
-    public static <T> RetVal<T> error(@Nonnull final Problem problem, @Nonnull final Problem... problems) {
+    public static <T> RetVal<T> error(
+            @Nonnull final Problem problem,
+            @Nonnull final Problem... problems
+    ) {
         return new RetVal<>(Ret.joinRequiredProblems(problem, problems));
     }
 
@@ -51,9 +53,33 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
         return new RetVal<>(Ret.joinProblemSets(problems));
     }
 
+    /**
+     * Create a new RetVal instance that has errors.
+     *
+     * @param problem the first problem container.
+     * @param problems optional list of other problem containers to include in this value.
+     * @param <T> type of the value
+     * @return an error RetVal.
+     */
+    @Nonnull
+    public static <T> RetVal<T> errors(
+            @Nonnull final ProblemContainer problem, @Nonnull final ProblemContainer... problems
+    ) {
+        return new RetVal<>(Ret.joinRetProblems(problem, problems));
+    }
+
+    @SafeVarargs
+    @Nonnull
+    public static <T> RetVal<T> errors(@Nonnull final Iterable<ProblemContainer>... problems) {
+        return new RetVal<>(Ret.joinRetProblemSets(problems));
+    }
+
     // made package-protected to allow other classes in this package to pass in known
     // non-null, non-empty, immutable problem lists.
     RetVal(@Nonnull final List<Problem> problems) {
+        if (problems.isEmpty()) {
+            throw new IllegalArgumentException("no problems defined");
+        }
         this.problems = problems;
         this.listener = CheckMonitor.getInstance().registerErrorInstance(this);
         this.value = null;
@@ -66,7 +92,9 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
     }
 
     /**
-     * Get the value contained in this instance.  If this is an error state, then the value will be null.
+     * Get the value contained in this instance.  If this is an error state, then the value will
+     * be null.
+     *
      * @return the value, which will be null if there are problems.
      */
     @Nullable
@@ -77,8 +105,9 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
     }
 
     /**
-     * Get the result, which is always non-null.  If this instance has problems, then a runtime exception
-     * is thrown.
+     * Get the result, which is always non-null.  If this instance has problems, then a
+     * runtime exception is thrown.
+     *
      * @return the non-null value, only if this instance is ok.
      */
     @Nonnull
@@ -108,8 +137,8 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
     }
 
     /**
-     * Forward this instance as a nullable with a different value type, but only if it has errors.  If it
-     * does not have errors, then a runtime exception is thrown.
+     * Forward this instance as a nullable with a different value type, but only if it has
+     * errors.  If it does not have errors, then a runtime exception is thrown.
      *
      * @param <V> destination type
      * @return the value, only if this instance has errors.
@@ -124,7 +153,9 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
 
     /**
      * Forward this instance as a RetVoid object.
-     * @return this instance as a RetVoid object.  Any problems in this will be moved into the returned object.
+     *
+     * @return this instance as a RetVoid object.  Any problems in this will be moved into
+     *     the returned object.
      */
     @Nonnull
     public RetVoid asVoid() {
@@ -133,11 +164,38 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
 
     /**
      * Forward this instance as a nullable instance with the same value type.
+     *
      * @return a nullable version of the same instance.
      */
     @Nonnull
     public RetNullable<T> asNullable() {
-        return thenWrapped(() -> RetNullable.ok(this.value), () -> new RetNullable<>(this.problems));
+        return thenWrapped(
+                () -> RetNullable.ok(this.value),
+                () -> new RetNullable<>(this.problems));
+    }
+
+    /**
+     * Validate the value in the checker.  The checker can perform any amount of validation
+     * against the value as necessary, and returns an optional container of errors.  If no
+     * error is found, the checker can return null.
+     *
+     * @return a retval with additional problems, or this value if no problem is found.
+     */
+    @Nonnull
+    public RetVal<T> thenValidate(
+            @Nonnull final NonnullParamFunction<T, ProblemContainer> checker
+    ) {
+        // This does not count as a validity check, so don't run the listener.
+        if (! this.problems.isEmpty()) {
+            return this;
+        }
+        final ProblemContainer discovered = checker.apply(this.value);
+        if (discovered != null && discovered.hasProblems()) {
+            // Move the checking to the returned value.
+            this.listener.onChecked();
+            return RetVal.errors(this, discovered);
+        }
+        return this;
     }
 
     @Nonnull
@@ -148,35 +206,14 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
 
     @Nonnull
     @Override
-    public <R> RetVal<R> thenValue(@Nonnull final NonnullFunction<T, R> func) {
-        return thenWrapped(() -> ok(func.apply(this.value)), this::forwardError);
-    }
-
-    @Nonnull
-    @Override
-    public <R> RetNullable<R> thenNullable(@Nonnull final NonnullFunction<T, RetNullable<R>> func) {
-        return thenWrapped(() -> func.apply(this.value), this::forwardErrorNullable);
-    }
-
-    @Nonnull
-    @Override
-    public <R> RetNullable<R> thenNullableValue(@Nonnull final NonnullParamFunction<T, R> func) {
-        return thenWrapped(() -> RetNullable.ok(func.apply(this.value)), this::forwardErrorNullable);
-    }
-
-    @Nonnull
-    @Override
-    public RetVoid thenRun(@Nonnull final Runnable runner) {
-        return thenWrapped(() -> {
-            runner.run();
-            return RetVoid.ok();
-        }, () -> new RetVoid(this.problems));
-    }
-
-    @Nonnull
-    @Override
     public <R> RetVal<R> then(@Nonnull final NonnullSupplier<RetVal<R>> supplier) {
         return thenWrapped(supplier, this::forwardError);
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetVal<R> thenValue(@Nonnull final NonnullFunction<T, R> func) {
+        return thenWrapped(() -> ok(func.apply(this.value)), this::forwardError);
     }
 
     @Nonnull
@@ -187,14 +224,40 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
 
     @Nonnull
     @Override
-    public <R> RetNullable<R> thenNullable(@Nonnull final NonnullSupplier<RetNullable<R>> supplier) {
+    public <R> RetNullable<R> thenNullable(@Nonnull final NonnullFunction<T, RetNullable<R>> func) {
+        return thenWrapped(() -> func.apply(this.value), this::forwardErrorNullable);
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> thenNullable(
+            @Nonnull final NonnullSupplier<RetNullable<R>> supplier
+    ) {
         return thenWrapped(supplier, this::forwardErrorNullable);
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> thenNullableValue(@Nonnull final NonnullParamFunction<T, R> func) {
+        return thenWrapped(() ->
+                RetNullable.ok(func.apply(this.value)),
+                this::forwardErrorNullable
+        );
     }
 
     @Nonnull
     @Override
     public <R> RetNullable<R> thenNullableValue(@Nonnull final Supplier<R> supplier) {
         return thenWrapped(() -> RetNullable.ok(supplier.get()), this::forwardErrorNullable);
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid thenRun(@Nonnull final Runnable runner) {
+        return thenWrapped(() -> {
+            runner.run();
+            return RetVoid.ok();
+        }, () -> new RetVoid(this.problems));
     }
 
     @Nonnull
@@ -213,7 +276,8 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
     }
 
     private <R> R thenWrapped(
-            @Nonnull final NonnullSupplier<R> supplier, @Nonnull final NonnullSupplier<R> errorFactory
+            @Nonnull final NonnullSupplier<R> supplier,
+            @Nonnull final NonnullSupplier<R> errorFactory
     ) {
         // Pass the checking ownership to the created object.
         this.listener.onChecked();
@@ -232,26 +296,14 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
 
     @Nonnull
     @Override
-    public <R> RetVal<R> withValue(@Nonnull final NonnullFunction<T, R> func) {
-        return withWrapped(() -> RetVal.ok(func.apply(this.value)), RetVal::new);
-    }
-
-    @Nonnull
-    @Override
-    public <R> RetNullable<R> withNullable(@Nonnull final NonnullFunction<T, RetNullable<R>> func) {
-        return withWrapped(() -> func.apply(this.value), RetNullable::new);
-    }
-
-    @Nonnull
-    @Override
-    public <R> RetNullable<R> withNullableValue(@Nonnull final NonnullParamFunction<T, R> func) {
-        return withWrapped(() -> RetNullable.ok(func.apply(this.value)), RetNullable::new);
-    }
-
-    @Nonnull
-    @Override
     public <R> RetVal<R> with(@Nonnull final NonnullSupplier<RetVal<R>> supplier) {
         return withWrapped(supplier, RetVal::new);
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetVal<R> withValue(@Nonnull final NonnullFunction<T, R> func) {
+        return withWrapped(() -> RetVal.ok(func.apply(this.value)), RetVal::new);
     }
 
     @Nonnull
@@ -262,8 +314,22 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
 
     @Nonnull
     @Override
-    public <R> RetNullable<R> withNullable(@Nonnull final NonnullSupplier<RetNullable<R>> supplier) {
+    public <R> RetNullable<R> withNullable(@Nonnull final NonnullFunction<T, RetNullable<R>> func) {
+        return withWrapped(() -> func.apply(this.value), RetNullable::new);
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> withNullable(
+            @Nonnull final NonnullSupplier<RetNullable<R>> supplier
+    ) {
         return withWrapped(supplier, RetNullable::new);
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> withNullableValue(@Nonnull final NonnullParamFunction<T, R> func) {
+        return withWrapped(() -> RetNullable.ok(func.apply(this.value)), RetNullable::new);
     }
 
     @Nonnull
@@ -279,7 +345,8 @@ public class RetVal<T> implements ProblemContainer, ContinuationValue<T> {
     }
 
     private <R extends ProblemContainer> R withWrapped(
-            @Nonnull final NonnullSupplier<R> supplier, @Nonnull final NonnullFunction<List<Problem>, R> errorFactory
+            @Nonnull final NonnullSupplier<R> supplier,
+            @Nonnull final NonnullFunction<List<Problem>, R> errorFactory
     ) {
         // Pass the checking ownership to the created object.
         this.listener.onChecked();

@@ -1,17 +1,15 @@
 // Released under the MIT License. 
-package net.groboclown.retval.v1.usecases;
-
-import net.groboclown.retval.v1.RetVoid;
-import net.groboclown.retval.v1.impl.MockCheckMonitor;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+package net.groboclown.retval.usecases.readfile;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
+import net.groboclown.retval.v1.impl.MockCheckMonitor;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -31,6 +29,10 @@ class ReadFileContentsTest {
                 ReadFileContents.readFully("ReadFileTest1.txt", reader).thenVoid((text) -> {
                     assertEquals("contents", text.trim());
                 }).anyProblems()
+        );
+        assertEquals(
+                List.of(),
+                this.monitor.getNeverChecked()
         );
     }
 

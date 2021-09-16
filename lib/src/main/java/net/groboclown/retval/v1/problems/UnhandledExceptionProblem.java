@@ -1,10 +1,9 @@
 // Released under the MIT License. 
 package net.groboclown.retval.v1.problems;
 
-import net.groboclown.retval.v1.Problem;
-
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
+import net.groboclown.retval.v1.Problem;
 
 /**
  * A problem that comes from an exception that wasn't properly handled.

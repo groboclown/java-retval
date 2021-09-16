@@ -1,13 +1,12 @@
 // Released under the MIT License. 
 package net.groboclown.retval.v1.impl;
 
-import net.groboclown.retval.v1.CheckMonitor;
-import net.groboclown.retval.v1.ProblemContainer;
-
-import javax.annotation.Nonnull;
 import java.lang.ref.Cleaner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
+import net.groboclown.retval.v1.CheckMonitor;
+import net.groboclown.retval.v1.ProblemContainer;
 
 
 /**

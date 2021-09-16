@@ -1,9 +1,9 @@
 // Released under the MIT License.
 package net.groboclown.retval.v1;
 
+import java.util.List;
 import net.groboclown.retval.v1.problems.LocalizedProblem;
 import org.junit.jupiter.api.Test;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 

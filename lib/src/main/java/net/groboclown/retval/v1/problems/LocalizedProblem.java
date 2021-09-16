@@ -1,11 +1,10 @@
 // Released under the MIT License. 
 package net.groboclown.retval.v1.problems;
 
-import net.groboclown.retval.v1.Problem;
-
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
-import java.util.Objects;
+import net.groboclown.retval.v1.Problem;
 
 /**
  * Problem with a simple, localized message text.

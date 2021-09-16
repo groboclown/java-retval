@@ -1,19 +1,17 @@
 // Released under the MIT License. 
 package net.groboclown.retval.v1;
 
-
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import net.groboclown.retval.v1.impl.DebugCheckMonitor;
 import net.groboclown.retval.v1.impl.NoOpCheckMonitor;
-
-import javax.annotation.Nonnull;
-import java.util.Objects;
-
 
 /**
  * A singleton that monitors the state of closable and return values, to ensure that their
  * values are checked.
  *
- * This exists outside the objects that call here, so that they do not need to allocate information
+ * <p>This exists outside the objects that call here, so that they do not need to
+ * allocate information
  */
 public abstract class CheckMonitor {
     private static CheckMonitor INSTANCE;
@@ -60,13 +58,15 @@ public abstract class CheckMonitor {
 
     /**
      * Register a new object that can potentially contain errors with the monitor.
+     *
      * @return a unique ID for the instance.
      */
     @Nonnull
     public abstract CheckableListener registerErrorInstance(@Nonnull ProblemContainer instance);
 
     /**
-     * Is tracing enabled?  If not enabled, then more memory efficient versions of objects may be used.
+     * Is tracing enabled?  If not enabled, then more memory efficient versions of objects may
+     * be used.
      *
      * @return true if close tracing is enabled, false otherwise.
      */
@@ -86,8 +86,8 @@ public abstract class CheckMonitor {
 
 
     /**
-     * Allow for runtime replacement of the singleton.  This is useful for testing or dynamically enabling
-     * tracing.
+     * Allow for runtime replacement of the singleton.  This is useful for testing or
+     * dynamically enabling tracing.
      */
     public static void setInstance(@Nonnull final CheckMonitor monitor) {
         Objects.requireNonNull(monitor, "monitor");

@@ -9,6 +9,11 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public interface Problem {
+    /**
+     * A human-consumable message describing the problem.
+     *
+     * @return the message, localized for the end-user.
+     */
     @Nonnull
     String localMessage();
 }

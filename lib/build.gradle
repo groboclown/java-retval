@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'checkstyle'
     id 'jacoco'
 }
 
@@ -35,4 +36,7 @@ jacocoTestCoverageVerification {
             }
         }
     }
+}
+checkstyle {
+    toolVersion "9.0"
 }

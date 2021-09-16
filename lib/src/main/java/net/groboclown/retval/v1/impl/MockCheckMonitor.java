@@ -1,18 +1,16 @@
 // Released under the MIT License. 
 package net.groboclown.retval.v1.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import net.groboclown.retval.v1.CheckMonitor;
 import net.groboclown.retval.v1.ProblemContainer;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-
-
 /**
- * A mock check monitor, suitable for testing.  Note that if used in a non-test environment, this has the
- * potential to quickly consume lots of memory.
+ * A mock check monitor, suitable for testing.  Note that if used in a non-test environment,
+ * this has the potential to quickly consume lots of memory.
  */
 public class MockCheckMonitor extends CheckMonitor {
     private final CheckMonitor previous;
@@ -30,8 +28,9 @@ public class MockCheckMonitor extends CheckMonitor {
     public static MockCheckMonitor setup() {
         final CheckMonitor previous = CheckMonitor.getInstance();
         if (previous instanceof MockCheckMonitor) {
-            throw new IllegalStateException("Already have a " + MockCheckMonitor.class.getSimpleName() +
-                    " registered");
+            throw new IllegalStateException(
+                    "Already have a " + MockCheckMonitor.class.getSimpleName()
+                    + " registered");
         }
         final MockCheckMonitor ret = new MockCheckMonitor(previous);
         CheckMonitor.setInstance(ret);
@@ -121,13 +120,14 @@ public class MockCheckMonitor extends CheckMonitor {
 
     /**
      * Return all registered closeable objects that never had the close called on the listener.
+     *
      * @return all never closed, registered objects.
      */
     @Nonnull
     public List<AutoCloseable> getNeverClosed() {
         final List<AutoCloseable> ret = new ArrayList<>();
         synchronized (this.closeables) {
-            for (final RegisteredCloseable reg: this.closeables) {
+            for (final RegisteredCloseable reg : this.closeables) {
                 if (! reg.wasClosed()) {
                     ret.add(reg.getCloseable());
                 }
@@ -139,13 +139,14 @@ public class MockCheckMonitor extends CheckMonitor {
 
     /**
      * Return all registered closeable objects that never had the close called on the listener.
+     *
      * @return all never closed, registered objects.
      */
     @Nonnull
     public List<ProblemContainer> getNeverChecked() {
         final List<ProblemContainer> ret = new ArrayList<>();
         synchronized (this.checkables) {
-            for (final RegisteredCheckable reg: this.checkables) {
+            for (final RegisteredCheckable reg : this.checkables) {
                 if (! reg.wasChecked()) {
                     ret.add(reg.getCheckable());
                 }
@@ -168,6 +169,7 @@ public class MockCheckMonitor extends CheckMonitor {
 
         /**
          * Get the number of times the {@link #onClosed()} method was called.
+         *
          * @return closed invocation count
          */
         public int getCallCount() {
@@ -175,7 +177,8 @@ public class MockCheckMonitor extends CheckMonitor {
         }
 
         /**
-         * Did this closeable object have the {@link #onClosed()} ()} method called?
+         * Return if this closeable object had the {@link #onClosed()} ()} method called.
+         *
          * @return true if the on close method was called, otherwise false.
          */
         public boolean wasClosed() {
@@ -198,7 +201,9 @@ public class MockCheckMonitor extends CheckMonitor {
         }
     }
 
-
+    /**
+     * Checkable listener class that's suitable for testing.
+     */
     public static class RegisteredCheckable implements CheckableListener {
         private final ProblemContainer checkable;
         private int callCount;
@@ -209,6 +214,7 @@ public class MockCheckMonitor extends CheckMonitor {
 
         /**
          * Get the number of times the {@link #onChecked()} method was called.
+         *
          * @return the checked invocation count.
          */
         public int getCallCount() {
@@ -216,7 +222,8 @@ public class MockCheckMonitor extends CheckMonitor {
         }
 
         /**
-         * Did this checkable object have the {@link #onChecked()} method called?
+         * Return if this checkable object has the {@link #onChecked()} method called.
+         *
          * @return true if the on check method was called, otherwise false.
          */
         public boolean wasChecked() {
