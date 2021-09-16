@@ -2,8 +2,8 @@ language: java
 install: skip
 
 os: linux
-dist: trusty
-jdk: openjdk9
+dist: xenial
+jdk: openjdk10
 
 script:
   - ./gradlew build --scan -s
