@@ -2,7 +2,7 @@
 
 Library for Java 9+ programs to combine error messages and return values in a single return object, without using Exceptions.
 
-[![dev branch build](https://travis-ci.com/groboclown/java-retval.svg?branch=dev)](https://travis-ci.com/github/groboclown/java-retval) [![license: MIT](https://img.shields.io/badge/license-MIT-brightgreen)](https://github.com/groboclown/java-retval)
+[![dev branch build](https://github.com/groboclown/java-retval/actions/workflows/build.yaml/badge.svg?branch=dev)]() [![license: MIT](https://img.shields.io/badge/license-MIT-brightgreen)](https://github.com/groboclown/java-retval)
 
 
 ## Why?
