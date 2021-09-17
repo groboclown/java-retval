@@ -306,9 +306,29 @@ public class RetVal<T> implements ProblemContainer {
     @Nonnull
     public <V> RetNullable<V> forwardNullableProblems() {
         Ret.enforceHasProblems(this.problems);
+        // pass the check to the returned value
         this.listener.onChecked();
         // memory efficient access.
         return new RetNullable<>(this.problems);
+    }
+
+    /**
+     * Forward this instance as a value-less object, but only if it has
+     * errors.  If it does not have errors, then a runtime exception is thrown.
+     *
+     * <p>The most common use case is when a value construction requires multiple steps, and
+     * an early step requires early exit from the function.  This allows a memory efficient
+     * type casting of the problems to the construction function's type.
+     *
+     * @return the value, only if this instance has errors.
+     */
+    @Nonnull
+    public RetVoid forwardVoidProblems() {
+        Ret.enforceHasProblems(this.problems);
+        // pass the check to the returned value
+        this.listener.onChecked();
+        // memory efficient access.
+        return new RetVoid(this.problems);
     }
 
     /**

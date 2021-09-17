@@ -1,8 +1,6 @@
 name: java-retval-release
 on:
   push:
-    branches-ignore:
-      - '!main'
     tags:
       - 'v*'  # push events to matching v*, e.g. v1.0
 jobs:
@@ -19,7 +17,7 @@ jobs:
           distribution: 'adopt'
           cache: gradle
       - name: Build Artifacts
-        run: ./gradlew build
+        run: ./gradlew clean build
 
       - name: Create Release
         id: create_release
