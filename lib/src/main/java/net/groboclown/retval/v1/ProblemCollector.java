@@ -9,29 +9,35 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import net.groboclown.retval.v1.function.NonnullConsumer;
+import net.groboclown.retval.v1.function.NonnullSupplier;
 
 /**
  * Collects problems from multiple requests to gather data.
+ *
+ * <p>This has subtle differences in usage with the {@link ValueBuilder}.  The builder collects
+ * information about one non-null value under construction, while this collects problems
+ * for one or more values that generally take all arguments in a constructor.
  */
-public class RetCollector implements ProblemContainer {
+public class ProblemCollector implements ProblemContainer {
     private final List<Problem> problems = new ArrayList<>();
 
-    private RetCollector() {
+    private ProblemCollector() {
         // Use static constructors.
     }
 
     @Nonnull
-    public static RetCollector from() {
-        return new RetCollector();
+    public static ProblemCollector from() {
+        return new ProblemCollector();
     }
 
 
     @Nonnull
-    public static RetCollector from(
+    public static ProblemCollector from(
             @Nonnull final ProblemContainer container,
             @Nonnull final ProblemContainer... containers
     ) {
-        return new RetCollector().with(container, containers);
+        return new ProblemCollector().with(container, containers);
     }
 
     /**
@@ -43,11 +49,11 @@ public class RetCollector implements ProblemContainer {
      * @return a new collector
      */
     @Nonnull
-    public static <T> RetCollector fromValue(
+    public static <T> ProblemCollector fromValue(
             @Nonnull final RetVal<T> value,
             @Nonnull final NonnullConsumer<T> setter
     ) {
-        return new RetCollector().withValue(value, setter);
+        return new ProblemCollector().withValue(value, setter);
     }
 
     /**
@@ -59,11 +65,11 @@ public class RetCollector implements ProblemContainer {
      * @return a new collector
      */
     @Nonnull
-    public static <T> RetCollector fromValue(
+    public static <T> ProblemCollector fromValue(
             @Nonnull final RetNullable<T> value,
             @Nonnull final Consumer<T> setter
     ) {
-        return new RetCollector().withValue(value, setter);
+        return new ProblemCollector().withValue(value, setter);
     }
 
     /**
@@ -74,7 +80,7 @@ public class RetCollector implements ProblemContainer {
      * @return this instance
      */
     @Nonnull
-    public RetCollector with(
+    public ProblemCollector with(
             @Nonnull final Problem problem,
             @Nonnull final Problem... problems) {
         this.problems.add(problem);
@@ -90,7 +96,7 @@ public class RetCollector implements ProblemContainer {
      * @return this instance
      */
     @Nonnull
-    public RetCollector with(
+    public ProblemCollector with(
             @Nonnull final ProblemContainer container,
             @Nonnull final ProblemContainer... containers) {
         this.problems.addAll(container.anyProblems());
@@ -109,11 +115,10 @@ public class RetCollector implements ProblemContainer {
      */
     @SafeVarargs
     @Nonnull
-    public final RetCollector withProblemSets(
+    public final ProblemCollector withProblemSets(
             @Nonnull final Collection<Problem> problems,
             @Nonnull final Collection<Problem>... problemList) {
-        this.problems.addAll(problems);
-        this.problems.addAll(Ret.joinProblemSets(problemList));
+        this.problems.addAll(Ret.joinProblemSets(problems, problemList));
         return this;
     }
 
@@ -126,11 +131,10 @@ public class RetCollector implements ProblemContainer {
      */
     @SafeVarargs
     @Nonnull
-    public final RetCollector withRetSets(
+    public final ProblemCollector withRetSets(
             @Nonnull final Collection<ProblemContainer> containerSet,
             @Nonnull final Collection<ProblemContainer>... containerSets) {
-        this.problems.addAll(Ret.joinRetProblemSets(containerSet));
-        this.problems.addAll(Ret.joinRetProblemSets(containerSets));
+        this.problems.addAll(Ret.joinRetProblemSets(containerSet, containerSets));
         return this;
     }
 
@@ -144,7 +148,7 @@ public class RetCollector implements ProblemContainer {
      * @return this collector
      */
     @Nonnull
-    public <T> RetCollector withValue(
+    public <T> ProblemCollector withValue(
             @Nonnull final RetVal<T> value,
             @Nonnull final NonnullConsumer<T> setter
     ) {
@@ -165,7 +169,7 @@ public class RetCollector implements ProblemContainer {
      * @return this collector
      */
     @Nonnull
-    public <T> RetCollector withValue(
+    public <T> ProblemCollector withValue(
             @Nonnull final RetNullable<T> value,
             @Nonnull final Consumer<T> setter
     ) {
@@ -184,11 +188,12 @@ public class RetCollector implements ProblemContainer {
      * @param <T> type of the value
      * @return the non-null value or problems
      */
+    @Nonnull
     public <T> RetVal<T> then(@Nonnull final NonnullSupplier<RetVal<T>> getter) {
         if (this.problems.isEmpty()) {
             return getter.get();
         }
-        return RetVal.error(this.problems);
+        return RetVal.fromProblem(this.problems);
     }
 
     /**
@@ -199,11 +204,12 @@ public class RetCollector implements ProblemContainer {
      * @param <T> type of the value
      * @return the non-null value or problems
      */
+    @Nonnull
     public <T> RetVal<T> thenValue(@Nonnull final NonnullSupplier<T> getter) {
         if (this.problems.isEmpty()) {
             return RetVal.ok(getter.get());
         }
-        return RetVal.error(this.problems);
+        return RetVal.fromProblem(this.problems);
     }
 
     /**
@@ -214,11 +220,12 @@ public class RetCollector implements ProblemContainer {
      * @param <T> type of the value
      * @return the nullable value or problems
      */
+    @Nonnull
     public <T> RetNullable<T> thenNullable(@Nonnull final NonnullSupplier<RetNullable<T>> getter) {
         if (this.problems.isEmpty()) {
             return getter.get();
         }
-        return RetNullable.error(this.problems);
+        return RetNullable.fromProblem(this.problems);
     }
 
     /**
@@ -229,11 +236,12 @@ public class RetCollector implements ProblemContainer {
      * @param <T> type of the value
      * @return the nullable value or problems
      */
+    @Nonnull
     public <T> RetNullable<T> thenNullableValue(@Nonnull final Supplier<T> getter) {
         if (this.problems.isEmpty()) {
             return RetNullable.ok(getter.get());
         }
-        return RetNullable.error(this.problems);
+        return RetNullable.fromProblem(this.problems);
     }
 
     /**
@@ -244,6 +252,7 @@ public class RetCollector implements ProblemContainer {
      * @param runner runner to execute if there are no problems.
      * @return the problems, if any exist before running.
      */
+    @Nonnull
     public RetVoid thenRun(@Nonnull final Runnable runner) {
         if (this.problems.isEmpty()) {
             runner.run();
@@ -260,11 +269,12 @@ public class RetCollector implements ProblemContainer {
      * @param <T> type of the value
      * @return the problems or the value
      */
-    public <T> RetVal<T> thenReturn(@Nonnull final T value) {
+    @Nonnull
+    public <T> RetVal<T> complete(@Nonnull final T value) {
         if (this.problems.isEmpty()) {
             return RetVal.ok(value);
         }
-        return RetVal.error(this.problems);
+        return RetVal.fromProblem(this.problems);
     }
 
     /**
@@ -275,11 +285,17 @@ public class RetCollector implements ProblemContainer {
      * @param <T> type of the value
      * @return problems or the value
      */
-    public <T> RetNullable<T> thenReturnNullable(@Nullable final T value) {
+    @Nonnull
+    public <T> RetNullable<T> completeNullable(@Nullable final T value) {
         if (this.problems.isEmpty()) {
             return RetNullable.ok(value);
         }
-        return RetNullable.error(this.problems);
+        return RetNullable.fromProblem(this.problems);
+    }
+
+    @Nonnull
+    public <T> WarningVal<T> warn(@Nonnull final T value) {
+        return WarningVal.from(value, this);
     }
 
     @Override

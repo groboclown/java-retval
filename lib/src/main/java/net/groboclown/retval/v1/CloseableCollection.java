@@ -16,7 +16,7 @@ import javax.annotation.concurrent.Immutable;
  * objects.
  *
  * <p>The collection is primarily used to keep track of values that should be closed
- * at the end of a <tt>Ret*</tt> call chain.
+ * at the end of a <code>Ret*</code> call chain.
  */
 @Immutable
 public class CloseableCollection implements AutoCloseable {

@@ -2,12 +2,15 @@
 package net.groboclown.retval.v1;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import net.groboclown.retval.v1.function.NonnullReturnFunction;
+import net.groboclown.retval.v1.function.NonnullSupplier;
 
 /**
  * A problem container that contains a nullable value or problems, but
@@ -16,23 +19,35 @@ import javax.annotation.Nullable;
  * @param <T> type of the contained value
  */
 public class RetNullable<T> implements ProblemContainer, ContinuationNullable<T> {
+
+    // Developer notes:
+    // * Much of the logic here is a copy of the RetVal class, but with minor variations
+    //   on typing to use nullable types.  The logic that applies to the RetVal class also
+    //   applies here.
+    // * There could be a valid claim to say that RetVal and RetNullable could share an
+    //   underlying class to contain that logic.  Maybe that will be pursued in future versions.
+    //   For now, the logic is duplicated for the sake of memory.
+
     private final List<Problem> problems;
     private final CheckMonitor.CheckableListener listener;
     private final T value;
 
     @Nonnull
     public static <T> RetNullable<T> ok(@Nullable final T value) {
-        throw new IllegalStateException();
+        return new RetNullable<>(value);
     }
 
     @Nonnull
-    public static <T> RetNullable<T> error(@Nonnull final Problem... problems) {
-        throw new IllegalStateException();
+    public static <T> RetNullable<T> fromProblem(
+            @Nonnull final Problem problem,
+            @Nonnull final Problem... problems
+    ) {
+        return new RetNullable<>(Ret.joinProblems(problem, problems));
     }
 
     @SafeVarargs
     @Nonnull
-    public static <T> RetNullable<T> error(@Nonnull final Iterable<Problem>... problems) {
+    public static <T> RetNullable<T> fromProblem(@Nonnull final Iterable<Problem>... problems) {
         throw new IllegalStateException();
     }
 
@@ -47,15 +62,24 @@ public class RetNullable<T> implements ProblemContainer, ContinuationNullable<T>
         this.value = null;
     }
 
+    private RetNullable(@Nullable final T value) {
+        this.problems = Collections.emptyList();
+        this.listener = CheckMonitor.getInstance().registerErrorInstance(this);
+        this.value = value;
+    }
+
 
     @Nullable
     public T getValue() {
-        throw new IllegalStateException();
+        // Not considered a check, so the check listener is not called
+        return this.value;
     }
 
     @Nullable
     public T result() {
-        throw new IllegalStateException();
+        // Not considered a check, so the check listener is not called
+        Ret.enforceNoProblems(this.problems);
+        return this.value;
     }
 
     @Nonnull
@@ -204,23 +228,23 @@ public class RetNullable<T> implements ProblemContainer, ContinuationNullable<T>
 
     @Override
     public boolean isProblem() {
-        return false;
+        return ! this.problems.isEmpty();
     }
 
     @Override
     public boolean hasProblems() {
-        return false;
+        return ! this.problems.isEmpty();
     }
 
     @Override
     public boolean isOk() {
-        return false;
+        return this.problems.isEmpty();
     }
 
     @Nonnull
     @Override
     public Collection<Problem> anyProblems() {
-        return null;
+        return this.problems;
     }
 
     @Nonnull

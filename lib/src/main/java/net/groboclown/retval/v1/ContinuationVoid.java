@@ -1,6 +1,8 @@
 // Released under the MIT License. 
 package net.groboclown.retval.v1;
 
+import net.groboclown.retval.v1.function.NonnullSupplier;
+
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 

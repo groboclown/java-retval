@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
+import net.groboclown.retval.v1.function.NonnullFunction;
+import net.groboclown.retval.v1.function.NonnullSupplier;
 import net.groboclown.retval.v1.impl.NoOpCheckMonitor;
 
 
@@ -49,12 +51,12 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
      */
     @SafeVarargs
     @Nonnull
-    public static RetVoid error(final Iterable<Problem>... problemSets) {
+    public static RetVoid error(@Nonnull final Collection<Problem>... problemSets) {
         // Simple, easy check.
         if (problemSets.length <= 0) {
             return ok();
         }
-        final List<Problem> all = Ret.joinProblemSets(problemSets);
+        final List<Problem> all = Ret.joinProblemSets(List.of(), problemSets);
         if (all.isEmpty()) {
             return ok();
         }
@@ -88,12 +90,12 @@ public class RetVoid implements ProblemContainer, ContinuationVoid {
      */
     @SafeVarargs
     @Nonnull
-    public static RetVoid errors(final Iterable<ProblemContainer>... rets) {
+    public static RetVoid errors(final Collection<ProblemContainer>... rets) {
         // Simple, easy check.
         if (rets.length <= 0) {
             return ok();
         }
-        final List<Problem> all = Ret.joinRetProblemSets(rets);
+        final List<Problem> all = Ret.joinRetProblemSets(List.of(), rets);
         if (all.isEmpty()) {
             return ok();
         }

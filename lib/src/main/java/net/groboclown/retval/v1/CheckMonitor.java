@@ -51,6 +51,7 @@ public abstract class CheckMonitor {
     /**
      * Register a new closable object with the monitor.
      *
+     * @param instance instance to register
      * @return a callback listener for when the close action occurs.
      */
     @Nonnull
@@ -59,6 +60,7 @@ public abstract class CheckMonitor {
     /**
      * Register a new object that can potentially contain errors with the monitor.
      *
+     * @param instance instance to register
      * @return a unique ID for the instance.
      */
     @Nonnull
@@ -72,8 +74,9 @@ public abstract class CheckMonitor {
      */
     public abstract boolean isTraceEnabled();
 
+    // package-protected for testing purposes.
     @Nonnull
-    private static CheckMonitor discoverInstance() {
+    static CheckMonitor discoverInstance() {
         // This is a placeholder for an eventual, possible more robust
         // dynamic implementation.
         final String debugEnv = System.getenv("RETVAL_MONITOR_DEBUG");
@@ -88,6 +91,8 @@ public abstract class CheckMonitor {
     /**
      * Allow for runtime replacement of the singleton.  This is useful for testing or
      * dynamically enabling tracing.
+     *
+     * @param monitor new monitor to use as the singleton.
      */
     public static void setInstance(@Nonnull final CheckMonitor monitor) {
         Objects.requireNonNull(monitor, "monitor");

@@ -35,7 +35,10 @@ public interface ProblemContainer {
     /**
      * Return all the problems in this object, even if the container is "ok".
      *
-     * <p>The returned collection is read-only.
+     * <p>Generally, this combines the problems in this instance with a larger collection,
+     * which can itself be used to check if any of the values had problems.
+     *
+     * <p>The returned collection is read-only, and contains no null values.
      *
      * @return the problems contained in this container, even if there are none.
      */
@@ -47,7 +50,7 @@ public interface ProblemContainer {
      * contains 1 or more problems.  If it contains 0, then this throws an
      * {@link IllegalStateException}.
      *
-     * <p>The returned collection is read-only.
+     * <p>The returned collection is read-only, and contains no null values.
      *
      * @return the problems in this container, and the collection will contain at least 1 item.
      * @throws IllegalStateException if this object has 0 problems.

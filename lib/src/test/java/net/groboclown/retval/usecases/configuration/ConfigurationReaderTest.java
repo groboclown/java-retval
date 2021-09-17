@@ -12,13 +12,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class MultiStageConfigurationTest {
+class ConfigurationReaderTest {
     MockCheckMonitor monitor;
 
     @Test
     void test_readProjectUser_empty() {
         final Properties props = new Properties();
-        final RetVal<List<ProjectUser>> res = MultiStageConfiguration.readProjectUsers("p1", props);
+        final RetVal<List<ProjectUser>> res = ConfigurationReader.readProjectUsers("p1", props);
         assertEquals(
                 List.of(
                         LocalizedProblem.from("no `projects` property")
@@ -35,7 +35,7 @@ class MultiStageConfigurationTest {
     void test_readProjectUser_noSuchProject() {
         final Properties props = new Properties();
         props.setProperty("projects", "p2,p3");
-        final RetVal<List<ProjectUser>> res = MultiStageConfiguration.readProjectUsers("p1", props);
+        final RetVal<List<ProjectUser>> res = ConfigurationReader.readProjectUsers("p1", props);
         assertEquals(
                 List.of(
                         LocalizedProblem.from("project `p1` is not registered")
@@ -52,7 +52,7 @@ class MultiStageConfigurationTest {
     void test_readProjectUser_noProjectValues() {
         final Properties props = new Properties();
         props.setProperty("projects", "p1");
-        final RetVal<List<ProjectUser>> res = MultiStageConfiguration.readProjectUsers("p1", props);
+        final RetVal<List<ProjectUser>> res = ConfigurationReader.readProjectUsers("p1", props);
         assertEquals(
                 List.of(
                         LocalizedProblem.from("no `project.p1.name` property"),

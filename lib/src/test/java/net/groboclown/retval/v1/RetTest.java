@@ -13,14 +13,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class RetTest {
     @Test
-    void joinProblemSets_none() {
-        assertSame(
-                Ret.NO_PROBLEMS,
-                Ret.joinProblemSets()
-        );
-    }
-
-    @Test
     void joinProblemSets_empty() {
         assertSame(
                 Ret.NO_PROBLEMS,

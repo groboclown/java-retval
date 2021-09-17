@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 
 /**
@@ -19,22 +20,65 @@ public class Ret {
     }
 
     /**
+     * Convenience function to create a {@link ValueAccumulator}.
+     *
+     * @param <T> type of the accumulator
+     * @return a value accumulator
+     */
+    @Nonnull
+    public static <T> ValueAccumulator<T> accumulateValues() {
+        return ValueAccumulator.from();
+    }
+
+    /**
+     * Convenience function to create a {@link ProblemCollector}.
+     *
+     * @return a new problem collector.
+     */
+    @Nonnull
+    public static ProblemCollector collectProblems() {
+        return ProblemCollector.from();
+    }
+
+    /**
+     * Convenience function to create a {@link WarningVal} instance for the given value.
+     *
+     * @param value value used to initialize the return value
+     * @param <T> type of the value
+     * @return an instance that collects problems associated with the value.
+     */
+    @Nonnull
+    public static <T> ValueBuilder<T> buildValue(@Nonnull final T value) {
+        return ValueBuilder.from(value);
+    }
+
+    /**
      * Join the array of lists of problems into a single list.
      *
-     * @param problemSets varargs of collections of problems.
-     * @return all the problems combined into a single, immutable list.
+     * @param problemSet collection of problems
+     * @param problemSets varargs of optional collections of problems.
+     * @return all the problems combined into a single, immutable list, with no null values.
      */
     @SafeVarargs
     @Nonnull
-    public static List<Problem> joinProblemSets(final Iterable<Problem>... problemSets) {
-        if (problemSets.length <= 0) {
-            return NO_PROBLEMS;
-        }
+    public static List<Problem> joinProblemSets(
+            @Nullable final Collection<Problem> problemSet,
+            @Nonnull final Collection<Problem>... problemSets
+    ) {
         final List<Problem> all = new ArrayList<>();
+        if (problemSet != null) {
+            for (final Problem problem : problemSet) {
+                if (problem != null) {
+                    all.add(problem);
+                }
+            }
+        }
         for (final Iterable<Problem> problems : problemSets) {
             if (problems != null) {
                 for (final Problem problem : problems) {
-                    all.add(problem);
+                    if (problem != null) {
+                        all.add(problem);
+                    }
                 }
             }
         }
@@ -47,17 +91,25 @@ public class Ret {
     /**
      * Joins problems in collections of {@link ProblemContainer} instances.
      *
-     * @param retSets vararg of collections of Ret values.
+     * @param retSet collection of Ret values.
+     * @param retSets vararg of optional collections of Ret values.
      * @return all the problems in a single, immutable list.
      */
     @SafeVarargs
     @Nonnull
-    public static List<Problem> joinRetProblemSets(final Iterable<ProblemContainer>... retSets) {
-        if (retSets.length <= 0) {
-            return NO_PROBLEMS;
-        }
+    public static List<Problem> joinRetProblemSets(
+            @Nullable final Collection<ProblemContainer> retSet,
+            final Collection<ProblemContainer>... retSets
+    ) {
         final List<Problem> all = new ArrayList<>();
-        for (final Iterable<ProblemContainer> rets : retSets) {
+        if (retSet != null) {
+            for (final ProblemContainer ret : retSet) {
+                if (ret != null) {
+                    all.addAll(ret.anyProblems());
+                }
+            }
+        }
+        for (final Collection<ProblemContainer> rets : retSets) {
             if (rets != null) {
                 for (final ProblemContainer ret : rets) {
                     if (ret != null) {
@@ -72,7 +124,6 @@ public class Ret {
         return Collections.unmodifiableList(all);
     }
 
-
     /**
      * Joins {@link ProblemContainer} instances into a list of problems.
      *
@@ -82,10 +133,13 @@ public class Ret {
      */
     @Nonnull
     public static List<Problem> joinRetProblems(
-            @Nonnull final ProblemContainer ret,
+            @Nullable final ProblemContainer ret,
             final ProblemContainer... rets
     ) {
-        final List<Problem> all = new ArrayList<>(ret.anyProblems());
+        final List<Problem> all = new ArrayList<>();
+        if (ret != null) {
+            all.addAll(ret.anyProblems());
+        }
         for (final ProblemContainer container : rets) {
             if (container != null) {
                 all.addAll(container.anyProblems());
@@ -103,15 +157,21 @@ public class Ret {
      *
      * @param problem the first problem.
      * @param problems vararg of optional problem values.
-     * @return all the problems in a single, immutable list.
+     * @return all the problems in a single, immutable list, with no null values.
      */
     @Nonnull
-    public static List<Problem> joinRequiredProblems(
-            @Nonnull final Problem problem, final Problem... problems
+    public static List<Problem> joinProblems(
+            @Nullable final Problem problem, final Problem... problems
     ) {
         final List<Problem> all = new ArrayList<>(1 + problems.length);
-        all.add(problem);
-        all.addAll(List.of(problems));
+        if (problem != null) {
+            all.add(problem);
+        }
+        for (final Problem prob : problems) {
+            if (prob != null) {
+                all.add(prob);
+            }
+        }
         return Collections.unmodifiableList(all);
     }
 
@@ -120,7 +180,7 @@ public class Ret {
      * Enforce that the list of problems is empty by throwing an
      * IllegalStateException if it contains problems.
      *
-     * @param problems list of problems to check.
+     * @param problems list of problems to check, which must contain non-null values.
      * @throws IllegalStateException if the problem list is not empty.
      */
     public static void enforceNoProblems(@Nonnull final Collection<Problem> problems) {
@@ -134,7 +194,7 @@ public class Ret {
      * Enforce that the list of problems is not empty by throwing an
      * IllegalStateException if it does not contain problems.
      *
-     * @param problems list of problems to check.
+     * @param problems list of problems to check, which must contain non-null values.
      * @return the argument
      * @throws IllegalStateException if the problem list is not empty.
      */

@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nonnull;
+import net.groboclown.retval.v1.function.NonnullReturnFunction;
 
 /**
  * Allows for accumulating a list of values, some of which may have errors associated with them.
@@ -193,14 +194,31 @@ public class ValueAccumulator<T> implements ProblemContainer {
     /**
      * Return a collection of the accumulated values, or the problems collected.
      *
+     * <p>This is functionally identical to {@link #asRetVal()}, but logically means a
+     * continuation of processing within the same call chain.
+     *
      * @return the problems or values collected.
      */
     @Nonnull
-    public RetVal<Collection<T>> asRetVal() {
+    public RetVal<Collection<T>> then() {
         if (isOk()) {
             return RetVal.ok(getValues());
         }
-        return RetVal.error(this.problems);
+        return RetVal.fromProblem(this.problems);
+    }
+
+    /**
+     * Returns the accumulated values as a RetVal if there are no problems,
+     * otherwise the enclosed problems.
+     *
+     * <p>This is functionally identical to {@link #then()}, but logically means a
+     * conversion to a standard object and completing the call chain.
+     *
+     * @return a RetVal representation of this instance.
+     */
+    @Nonnull
+    public RetVal<Collection<T>> asRetVal() {
+        return then();
     }
 
     /**
@@ -211,9 +229,7 @@ public class ValueAccumulator<T> implements ProblemContainer {
      */
     @Nonnull
     public WarningVal<Collection<T>> asWarnings() {
-        final WarningVal<Collection<T>> ret = WarningVal.from(this.getValues());
-        ret.getCollector().withProblemSets(this.problems);
-        return ret;
+        return WarningVal.from(this.getValues(), this);
     }
 
     @Override

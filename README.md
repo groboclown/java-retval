@@ -184,22 +184,45 @@ By default, the library will silently ignore Problems that haven't been checked.
 However, you can set the environment variable `RETVAL_MONITOR_DEBUG` to `true` to enable logging when a tracked closeable or problem collection is garbage collected but not checked.  This allows for better inspection of where these problem areas may live.  Problems are sent to the Java logging mechanism's warning level, along with a stack trace for where the object was first created.
 
 
-## Developing The Library
 
-To develop the library, you'll need to fork the repository and submit changes back to the main project.  All changes you make will need to first have a good build.
+## Smells
+
+The API is carefully constructed to push you down a path that doesn't lose information.  If you find yourself performing identity transforms, using no-op consumers, or filling the code with "if" statements, then you should reconsider your code logic.
+
+```java
+class DataStore {
+    private MyData myData;
+    
+    static RetVal<MyData> readData(File source) {
+        // ...
+    }
+    
+    RetVoid processData_poorlyThoughtOut(File source) {
+        RetVal<MyData> res = readData(source);
+        if (res.isOk()) {
+            myData = res.result();
+            return RetVoid.ok();
+        }
+        return res.thenVoid((x) -> {});
+    }
+    
+    RetVoid processData_better(File source) {
+        return readData(source)
+                .thenVoid((value) -> { this.myData = value; });
+    }
+    
+    static RetVal<DataStore> processData_evenBetter(File source) {
+        // In this way, the myData field could be made final and taken
+        // as the parameter to a private constructor.
+        return readData(source)
+                .map((value) -> {
+                    DataStore ret = new DataStore();
+                    ret.myData = value;
+                    return ret;
+                });
+    }
+}
+```
 
 
-### What's Left To Implement
-
-* Fill in the remaining placeholder functions.
-* Add in JavaDoc everywhere.  This is partially done.
-* Get up to 100% code coverage in tests.
-* Add in Closeable support for the `ret` values.  This will require careful use of the `CloseableCollection`.
-* API must be closer examined to ensure proper use cases for each top-level class and method.
-
-
-### Code Style Guide
-
-The library uses a style check based off of the Google standard.  There are more local variations that, though they conform to the standard, don't look like normal code.
-
-Each `usecase` test must include a `package-info.java` file to describe the purpose of the use case.  They should also be described in this file.
+Similarly, if you find your method uses combinations of `ValueBuilder` and `ProblemCollector`, then you may need to rethink things.

@@ -1,6 +1,8 @@
 // Released under the MIT License. 
 package net.groboclown.retval.v1;
 
+import net.groboclown.retval.v1.function.NonnullReturnFunction;
+
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;

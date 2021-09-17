@@ -11,7 +11,8 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import net.groboclown.retval.v1.RetCollector;
+import net.groboclown.retval.v1.ProblemCollector;
+import net.groboclown.retval.v1.Ret;
 import net.groboclown.retval.v1.RetVal;
 import net.groboclown.retval.v1.ValueAccumulator;
 import net.groboclown.retval.v1.WarningVal;
@@ -20,12 +21,12 @@ import net.groboclown.retval.v1.problems.LocalizedProblem;
 
 
 /**
- * Builds a configuration based on a properties file.
+ * Builds {@link ProjectUser} values based on a properties file.
  */
-public class MultiStageConfiguration {
+public class ConfigurationReader {
     private final Properties props;
 
-    private MultiStageConfiguration(final Properties props) {
+    private ConfigurationReader(final Properties props) {
         this.props = props;
     }
 
@@ -45,24 +46,27 @@ public class MultiStageConfiguration {
     public static RetVal<List<ProjectUser>> readProjectUsers(
             @Nonnull final String projectId, @Nonnull final Properties props
     ) {
-        final MultiStageConfiguration config = new MultiStageConfiguration(props);
+        final ConfigurationReader config = new ConfigurationReader(props);
 
         // First, find the project.  If this isn't found, then there's no other problems to check.
         final RetVal<String> projectIdRes = config.validateProjectId(projectId);
         if (projectIdRes.hasProblems()) {
-            return projectIdRes.forwardError();
+            return projectIdRes.forwardProblems();
         }
 
         final WarningVal<ProjectBuilder> projectRes = config.loadProject(projectId);
         // The project might be invalid, but we should also ensure the list of users for it
         // are valid, to help gather as many problems as possible without going too deep in
         // validating the whole file.
-        final RetVal<Collection<UserBuilder>> userListRes = ValueAccumulator.<UserBuilder>from()
+        final RetVal<Collection<UserBuilder>> userListRes =
+                ValueAccumulator.<UserBuilder>from()
+                // This can only be done because the call to getProjectUsers doesn't require
+                // a valid value during project parse time.
                 .withEach(projectRes.getValue().getProjectUsers(), config::loadUser)
                 .asRetVal();
 
         if (projectRes.hasProblems() || userListRes.hasProblems()) {
-            return RetVal.errors(projectRes, userListRes);
+            return RetVal.fromProblems(projectRes, userListRes);
         }
 
         return RetVal.ok(
@@ -87,7 +91,7 @@ public class MultiStageConfiguration {
             .then((projectIdList) -> {
                 // Validate the list, to ensure the requested project exists.
                 if (! projectIdList.contains(projectId)) {
-                    return RetVal.error(LocalizedProblem.from(
+                    return RetVal.fromProblem(LocalizedProblem.from(
                             "project `" + projectId + "` is not registered"
                     ));
                 }
@@ -106,10 +110,10 @@ public class MultiStageConfiguration {
     private RetVal<UserBuilder> loadUser(@Nonnull final String userId) {
         final UserBuilder builder = new UserBuilder();
         builder.setUser(userId);
-        return RetCollector.from()
+        return ProblemCollector.from()
             .withValue(loadRealNameFor(userId), builder::setRealName)
             .withValue(loadEmailFor(userId), builder::setEmail)
-            .thenReturn(builder);
+            .complete(builder);
     }
 
     /**
@@ -121,14 +125,12 @@ public class MultiStageConfiguration {
      */
     @Nonnull
     private WarningVal<ProjectBuilder> loadProject(@Nonnull final String projectId) {
-        final ProjectBuilder builder = new ProjectBuilder();
-        final WarningVal<ProjectBuilder> ret = WarningVal.from(builder);
-        builder.setProjectId(projectId);
-        ret.getCollector()
-                .withValue(loadProjectName(projectId), builder::setProjectName)
-                .withValue(loadAllowedProjectUserList(projectId), builder::setProjectUsers)
-                .withValue(loadProjectUrl(projectId), builder::setProjectUrl);
-        return ret;
+        return Ret.buildValue(new ProjectBuilder())
+                .withValue((builder) -> builder.setProjectId(projectId))
+                .with(loadProjectName(projectId), ProjectBuilder::setProjectName)
+                .with(loadAllowedProjectUserList(projectId), ProjectBuilder::setProjectUsers)
+                .with(loadProjectUrl(projectId), ProjectBuilder::setProjectUrl)
+                .asWarning();
     }
 
 
@@ -152,7 +154,7 @@ public class MultiStageConfiguration {
                 try {
                     return RetVal.ok(new URL(value));
                 } catch (final MalformedURLException e) {
-                    return RetVal.error(FileProblem.from(value, e));
+                    return RetVal.fromProblem(FileProblem.from(value, e));
                 }
             });
     }
@@ -189,18 +191,18 @@ public class MultiStageConfiguration {
                 // an appropriate form.
                 requireKey(key)
                         // once a valid value is found, split it into a list.
-                        .thenValue((val) -> Arrays.asList(val.split(","))),
+                        .map((val) -> Arrays.asList(val.split(","))),
 
                 // This lambda examines each piece split out by the above computation for validity.
                 (part) -> {
                     if (part == null || part.trim().isEmpty()) {
-                        return RetVal.error(LocalizedProblem.from(
+                        return RetVal.fromProblem(LocalizedProblem.from(
                                 "List of `" + key + "` cannot contain empty values"
                         ));
                     }
                     return RetVal.ok(part.trim());
                 })
-            .asRetVal();
+            .then();
     }
 
     private RetVal<String> requireKey(@Nonnull final String key) {
@@ -208,10 +210,10 @@ public class MultiStageConfiguration {
         // wrap the validation and value in a RetVal, rather than throwing exceptions.
         final String value = this.props.getProperty(key);
         if (value == null) {
-            return RetVal.error(LocalizedProblem.from("no `" + key + "` property"));
+            return RetVal.fromProblem(LocalizedProblem.from("no `" + key + "` property"));
         }
         if (value.trim().isEmpty()) {
-            return RetVal.error(LocalizedProblem.from("`" + key + "` value is blank"));
+            return RetVal.fromProblem(LocalizedProblem.from("`" + key + "` value is blank"));
         }
         return RetVal.ok(value);
     }

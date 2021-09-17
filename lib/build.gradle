@@ -22,7 +22,6 @@ dependencies {
 test {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
-    finalizedBy jacocoTestCoverageVerification
 }
 jacocoTestReport {
     dependsOn test
@@ -37,6 +36,32 @@ jacocoTestCoverageVerification {
         }
     }
 }
+check {
+    // Add the coverage verification to the check, rather than test, target,
+    // so that IDE and other cases of one-off test executions doesn't cause superfluous
+    // errors unrelated to just test pass/fail.
+    finalizedBy jacocoTestCoverageVerification
+}
 checkstyle {
     toolVersion "9.0"
+}
+
+
+task zipJavadoc(type: Zip) {
+    dependsOn javadoc
+
+    archiveClassifier = 'javadoc'
+
+    from javadoc.destinationDir
+}
+
+task zipSource(type: Zip) {
+    archiveClassifier = 'source'
+
+    from("${projectDir}/src/main/java")
+    from("${projectDir}/src/main/resources")
+}
+
+assemble {
+    dependsOn zipJavadoc, zipSource
 }

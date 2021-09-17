@@ -40,7 +40,7 @@ public class ReadFileContents {
             }
             return RetVal.ok(ret.toString());
         } catch (final IOException e) {
-            return RetVal.error(FileProblem.from(sourceName, e));
+            return RetVal.fromProblem(FileProblem.from(sourceName, e));
         }
     }
 
@@ -61,7 +61,7 @@ public class ReadFileContents {
             ret.load(reader);
             return RetVal.ok(ret);
         } catch (final IOException e) {
-            return RetVal.error(FileProblem.from(sourceName, e));
+            return RetVal.fromProblem(FileProblem.from(sourceName, e));
         }
     }
 }
