@@ -1,8 +1,7 @@
 // Released under the MIT License. 
-package net.groboclown.retval.impl;
+package net.groboclown.retval.monitor;
 
 import javax.annotation.Nonnull;
-import net.groboclown.retval.CheckMonitor;
 import net.groboclown.retval.ProblemContainer;
 
 /**

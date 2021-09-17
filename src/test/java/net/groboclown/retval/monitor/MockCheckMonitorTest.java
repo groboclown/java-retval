@@ -1,7 +1,6 @@
 // Released under the MIT License.
-package net.groboclown.retval.impl;
+package net.groboclown.retval.monitor;
 
-import net.groboclown.retval.CheckMonitor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

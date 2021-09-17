@@ -1,10 +1,9 @@
 // Released under the MIT License. 
-package net.groboclown.retval;
+package net.groboclown.retval.monitor;
 
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import net.groboclown.retval.impl.DebugCheckMonitor;
-import net.groboclown.retval.impl.NoOpCheckMonitor;
+import net.groboclown.retval.ProblemContainer;
 
 /**
  * A singleton that monitors the state of closable and return values, to ensure that their

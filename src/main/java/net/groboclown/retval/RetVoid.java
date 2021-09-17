@@ -10,7 +10,8 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import net.groboclown.retval.function.NonnullFunction;
 import net.groboclown.retval.function.NonnullSupplier;
-import net.groboclown.retval.impl.NoOpCheckMonitor;
+import net.groboclown.retval.monitor.CheckMonitor;
+import net.groboclown.retval.monitor.NoOpCheckMonitor;
 
 
 /**

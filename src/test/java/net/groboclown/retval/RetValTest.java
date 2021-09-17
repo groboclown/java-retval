@@ -4,7 +4,7 @@ package net.groboclown.retval;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import net.groboclown.retval.impl.MockCheckMonitor;
+import net.groboclown.retval.monitor.MockCheckMonitor;
 import net.groboclown.retval.problems.LocalizedProblem;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

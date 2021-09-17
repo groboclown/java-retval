@@ -6,7 +6,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
-import net.groboclown.retval.impl.MockCheckMonitor;
+import net.groboclown.retval.monitor.MockCheckMonitor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
