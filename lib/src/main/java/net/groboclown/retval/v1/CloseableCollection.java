@@ -14,6 +14,9 @@ import javax.annotation.concurrent.Immutable;
  * A container for multiple
  * {@link java.lang.AutoCloseable} (and thus {@link java.io.Closeable})
  * objects.
+ *
+ * <p>The collection is primarily used to keep track of values that should be closed
+ * at the end of a <tt>Ret*</tt> call chain.
  */
 @Immutable
 public class CloseableCollection implements AutoCloseable {

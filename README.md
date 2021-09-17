@@ -2,7 +2,7 @@
 
 Library for Java 9+ programs to combine error messages and return values in a single return object, without using Exceptions.
 
-[![dev branch build](https://github.com/groboclown/java-retval/actions/workflows/build.yaml/badge.svg?branch=dev)]() [![license: MIT](https://img.shields.io/badge/license-MIT-brightgreen)](https://github.com/groboclown/java-retval)
+[![dev branch build](https://github.com/groboclown/java-retval/actions/workflows/build.yaml/badge.svg?branch=dev)](https://github.com/groboclown/java-retval/actions/workflows/build.yaml) [![license: MIT](https://img.shields.io/badge/license-MIT-brightgreen)](https://github.com/groboclown/java-retval)
 
 
 ## Why?
@@ -195,6 +195,7 @@ To develop the library, you'll need to fork the repository and submit changes ba
 * Add in JavaDoc everywhere.  This is partially done.
 * Get up to 100% code coverage in tests.
 * Add in Closeable support for the `ret` values.  This will require careful use of the `CloseableCollection`.
+* API must be closer examined to ensure proper use cases for each top-level class and method.
 
 
 ### Code Style Guide
