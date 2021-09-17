@@ -1,0 +1,63 @@
+name: java-retval-release
+on:
+  push:
+    branches-ignore:
+      - '!main'
+    tags:
+      - 'v*'  # push events to matching v*, e.g. v1.0
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # Still perform the build.
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+          cache: gradle
+      - name: Build Artifacts
+        run: ./gradlew build
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      # TODO these ${{ gihub.ref }} values are not right
+      #   It will be in the format ref/tag/v1.1
+      - name: upload jar artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/libs/retval-${{ github.ref }}.jar
+          asset_name: retval.jar
+          asset_content_type: application/zip
+      - name: upload source artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/distributions/retval-${{ github.ref }}-source.zip
+          asset_name: retval-${{ github.ref }}-source.zip
+          asset_content_type: application/zip
+      - name: upload javadoc artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/distributions/retval-${{ github.ref }}-javadoc.zip
+          asset_name: retval-${{ github.ref }}-javadoc.zip
+          asset_content_type: application/zip

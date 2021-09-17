@@ -39,7 +39,7 @@ For the person performing the release:
 1. Prepare all the files for release into the `dev` branch.  Ensure the Github activity builds complete without error.
 2. Prepare documentation:
    1. Ensure the the [CHANGES.md]() file contains all appropriate updates.
-   2. Run `./gradlew javadoc` and put the generated documentation into the [docs]() directory, under a sub-directory named after the version to release (`mkdir docs/2.2.3 && cp -R lib/build/docs/javadoc/* docs/2.2.3/.`).
+   2. Run `./gradlew javadoc` and put the generated documentation into the [docs]() directory, under a sub-directory named after the version to release (`mkdir docs/2.2.3 && cp -R build/docs/javadoc/* docs/2.2.3/.`).
    3. Update the [docs/index.md]() file with the new version.
    4. Add, commit, and push.
 3. Merge the `dev` branch into `main`, then commit and push.  Make sure GitHub activity builds are good.
