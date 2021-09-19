@@ -36,7 +36,7 @@ public class WarningVal<T> implements ProblemContainer {
             @Nonnull final T value,
             @Nonnull final ProblemContainer problems
     ) {
-        return new WarningVal<T>(value, Ret.joinRetProblems(problems));
+        return new WarningVal<>(value, Ret.joinRetProblems(problems));
     }
 
 
@@ -78,5 +78,10 @@ public class WarningVal<T> implements ProblemContainer {
     @Override
     public String debugProblems(@Nonnull final String joinedWith) {
         return Ret.joinProblemMessages(joinedWith, this.problems);
+    }
+
+    @Override
+    public void joinProblemsWith(@Nonnull final Collection<Problem> problemList) {
+        problemList.addAll(this.problems);
     }
 }

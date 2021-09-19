@@ -1,5 +1,5 @@
 // Released under the MIT License. 
-package net.groboclown.retval;
+package net.groboclown.retval.ideas;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,7 +8,8 @@ import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
-import net.groboclown.retval.monitor.CheckMonitor;
+import net.groboclown.retval.monitor.NoOpObservedMonitor;
+import net.groboclown.retval.monitor.ObservedMonitor;
 
 
 /**
@@ -21,15 +22,20 @@ import net.groboclown.retval.monitor.CheckMonitor;
  */
 @Immutable
 public class CloseableCollection implements AutoCloseable {
+    // Place holder until this becomes a real boy.
+    public static final ObservedMonitor<AutoCloseable> CLOSEABLE_MONITOR
+            = new NoOpObservedMonitor<>();
+
     private final List<AutoCloseable> closeables;
-    private final CheckMonitor.CloseableListener listener;
+    private final ObservedMonitor.Listener listener;
 
     // Argument must be an immutable list.
     private CloseableCollection(
             @Nonnull final List<AutoCloseable> closeables
     ) {
         this.closeables = closeables;
-        this.listener = CheckMonitor.getInstance().registerCloseableInstance(this);
+        // When this becomes a real boy,
+        this.listener = CLOSEABLE_MONITOR.registerInstance(this);
     }
 
     /**
@@ -47,7 +53,7 @@ public class CloseableCollection implements AutoCloseable {
         final List<AutoCloseable> ret = new ArrayList<>(this.closeables);
         ret.addAll(Arrays.asList(closeables));
         // Because this returns a new instance, do not mark this one as still pending close.
-        this.listener.onClosed();
+        this.listener.onObserved();
         return new CloseableCollection(ret);
     }
 
@@ -66,7 +72,7 @@ public class CloseableCollection implements AutoCloseable {
         final List<AutoCloseable> ret = new ArrayList<>(this.closeables);
         ret.addAll(closeables);
         // Because this returns a new instance, do not mark this one as still pending close.
-        this.listener.onClosed();
+        this.listener.onObserved();
         return new CloseableCollection(ret);
     }
 
@@ -91,7 +97,7 @@ public class CloseableCollection implements AutoCloseable {
             ret.addAll(closableSet);
         }
         // Because this returns a new instance, do not mark this one as still pending close.
-        this.listener.onClosed();
+        this.listener.onObserved();
         return new CloseableCollection(ret);
     }
 
@@ -110,13 +116,13 @@ public class CloseableCollection implements AutoCloseable {
         final List<AutoCloseable> ret = new ArrayList<>(this.closeables);
         ret.addAll(collection.closeables);
         // Because this returns a new instance, do not mark this one as still pending close.
-        this.listener.onClosed();
+        this.listener.onObserved();
         return new CloseableCollection(ret);
     }
 
     @Override
     public void close() throws Exception {
-        this.listener.onClosed();
+        this.listener.onObserved();
         final List<Exception> errors = new ArrayList<>();
         boolean includesNonIoExceptions = false;
         for (final AutoCloseable closeable : this.closeables) {

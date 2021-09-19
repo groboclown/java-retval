@@ -55,7 +55,7 @@ public class ValueBuilder<T> implements ProblemContainer {
 
     @Nonnull
     public WarningVal<T> asWarning() {
-        return this.problems.warn(this.value);
+        return this.problems.asWarning(this.value);
     }
 
     /**
@@ -186,5 +186,10 @@ public class ValueBuilder<T> implements ProblemContainer {
     @Override
     public String debugProblems(@Nonnull final String joinedWith) {
         return this.problems.debugProblems(joinedWith);
+    }
+
+    @Override
+    public void joinProblemsWith(@Nonnull final Collection<Problem> problemList) {
+        this.problems.joinProblemsWith(problemList);
     }
 }

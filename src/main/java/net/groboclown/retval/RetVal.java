@@ -12,7 +12,7 @@ import net.groboclown.retval.function.NonnullConsumer;
 import net.groboclown.retval.function.NonnullFunction;
 import net.groboclown.retval.function.NonnullParamFunction;
 import net.groboclown.retval.function.NonnullSupplier;
-import net.groboclown.retval.monitor.CheckMonitor;
+import net.groboclown.retval.monitor.ObservedMonitor;
 
 /**
  * A non-null value holder version of a problem container.
@@ -67,7 +67,7 @@ import net.groboclown.retval.monitor.CheckMonitor;
  */
 public class RetVal<T> implements ProblemContainer {
     private final List<Problem> problems;
-    private final CheckMonitor.CheckableListener listener;
+    private final ObservedMonitor.Listener listener;
     private final T value;
 
     // Implementation notes for developers:
@@ -89,6 +89,9 @@ public class RetVal<T> implements ProblemContainer {
     //   is already I/O bound.  Where possible, memory efficiency should be utilized over speed,
     //   but never at the risk of exposing the programmer to allowed and unchecked incorrect usage
     //   patterns.
+    // * Even though this is immutable, care must be taken when considering the monitor's listener
+    //   state, to make sure it's correctly maintained.  This is directly related to the use
+    //   case of the class.
 
     /**
      * Create a new RetVal instance that has a value and no problems.
@@ -193,13 +196,17 @@ public class RetVal<T> implements ProblemContainer {
             throw new IllegalArgumentException("no problems defined");
         }
         this.problems = problems;
-        this.listener = CheckMonitor.getInstance().registerErrorInstance(this);
+        // The observable listeners are not passed to constructors.  This allows the developer
+        // to know which specific place caused the value to be lost, not where it originated from.
+        this.listener = ObservedMonitor.getCheckedInstance().registerInstance(this);
         this.value = null;
     }
 
     private RetVal(@Nonnull final T value) {
         this.problems = Collections.emptyList();
-        this.listener = CheckMonitor.getInstance().registerErrorInstance(this);
+        // The observable listeners are not passed to constructors.  This allows the developer
+        // to know which specific place caused the value to be lost, not where it originated from.
+        this.listener = ObservedMonitor.getCheckedInstance().registerInstance(this);
         this.value = value;
     }
 
@@ -271,17 +278,16 @@ public class RetVal<T> implements ProblemContainer {
      */
     @Nonnull
     public <V> RetVal<V> forwardProblems() {
-        // This does not count as a check.
         Ret.enforceHasProblems(this.problems);
 
         // There are circumstances where returning the exact same object isn't the right
         // operation, because the returned value should require a separate check, and any call
         // into this function usually means the caller already performed a check.
         // If traces are enabled, then the memory efficient form can't be used.
-        if (CheckMonitor.getInstance().isTraceEnabled()) {
+        if (ObservedMonitor.getCheckedInstance().isTraceEnabled()) {
             // This object will go out of scope, but the problems are returned, so mark it
             // as checked.
-            this.listener.onChecked();
+            this.listener.onObserved();
 
             // However, we can still reuse the read-only problem list.  So at least there's that.
             return new RetVal<>(this.problems);
@@ -308,7 +314,7 @@ public class RetVal<T> implements ProblemContainer {
     public <V> RetNullable<V> forwardNullableProblems() {
         Ret.enforceHasProblems(this.problems);
         // pass the check to the returned value
-        this.listener.onChecked();
+        this.listener.onObserved();
         // memory efficient access.
         return new RetNullable<>(this.problems);
     }
@@ -327,7 +333,7 @@ public class RetVal<T> implements ProblemContainer {
     public RetVoid forwardVoidProblems() {
         Ret.enforceHasProblems(this.problems);
         // pass the check to the returned value
-        this.listener.onChecked();
+        this.listener.onObserved();
         // memory efficient access.
         return new RetVoid(this.problems);
     }
@@ -375,7 +381,7 @@ public class RetVal<T> implements ProblemContainer {
         final ProblemContainer discovered = checker.apply(this.value);
         if (discovered != null && discovered.hasProblems()) {
             // Move the checking to the returned value.
-            this.listener.onChecked();
+            this.listener.onObserved();
             return RetVal.fromProblems(this, discovered);
         }
         return this;
@@ -567,62 +573,90 @@ public class RetVal<T> implements ProblemContainer {
 
     private <R> R thenWrapped(
             @Nonnull final NonnullSupplier<R> supplier,
-            final boolean errorIsCheck,
-            @Nonnull final NonnullSupplier<R> errorFactory
+            final boolean problemIsCheck,
+            @Nonnull final NonnullSupplier<R> problemFactory
     ) {
         if (! this.problems.isEmpty()) {
-            if (errorIsCheck) {
-                this.listener.onChecked();
+            if (problemIsCheck) {
+                this.listener.onObserved();
             }
-            return errorFactory.get();
+            return problemFactory.get();
         }
 
         // The supplier will always return a new object and, and this method must pass the
         // checking on to it.
-        this.listener.onChecked();
+        this.listener.onObserved();
         return supplier.get();
     }
 
     @Override
-    public boolean isProblem() {
-        this.listener.onChecked();
-        return ! this.problems.isEmpty();
+    public boolean hasProblems() {
+        // This alone does not make a check.  The problems themselves must be extracted or
+        // forwarded.  However, because the result call also does not count as a check,
+        // this will count as the check only if there are no problems.
+        if (this.problems.isEmpty()) {
+            this.listener.onObserved();
+            return false;
+        }
+        return true;
     }
 
     @Override
-    public boolean hasProblems() {
-        this.listener.onChecked();
-        return ! this.problems.isEmpty();
+    public boolean isProblem() {
+        return hasProblems();
     }
 
     @Override
     public boolean isOk() {
-        this.listener.onChecked();
-        return this.problems.isEmpty();
+        // This alone does not make a check.  The problems themselves must be extracted or
+        // forwarded.  However, because the result call also does not count as a check,
+        // this will count as the check only if there are no problems.
+        if (this.problems.isEmpty()) {
+            this.listener.onObserved();
+            return true;
+        }
+        return false;
     }
 
     @Nonnull
     @Override
     public Collection<Problem> anyProblems() {
-        // Consider this as checking for problems.  Generally, this combines the problems
-        // in this instance with a larger collection, which can itself be used to check if any
-        // of the values had problems.
-        this.listener.onChecked();
+        // This only counts as a check if there actually are problems. Generally, this
+        // combines the problems in this instance with a larger collection, which can
+        // itself be used to check if any of the values had problems.
+        if (! this.problems.isEmpty()) {
+            this.listener.onObserved();
+        }
         return this.problems;
     }
 
     @Nonnull
     @Override
     public Collection<Problem> validProblems() {
-        // Mark as checked before ensuring it has problems.
-        this.listener.onChecked();
-        Ret.enforceHasProblems(this.problems);
-        return this.problems;
+        // Just like result() doesn't trigger an observation, so this one doesn't either.
+        return Ret.enforceHasProblems(this.problems);
     }
 
     @Nonnull
     @Override
     public String debugProblems(@Nonnull final String joinedWith) {
         return Ret.joinProblemMessages(joinedWith, this.problems);
+    }
+
+    @Override
+    public void joinProblemsWith(@Nonnull final Collection<Problem> problemList) {
+        // This acts as closing off this value and passing the problem state to the
+        // list.
+        this.listener.onObserved();
+        problemList.addAll(this.problems);
+    }
+
+    @Override
+    public String toString() {
+        return "RetVal("
+                + (this.problems.isEmpty()
+                    ? ("value: " + this.value)
+                    : (this.problems.size() + " problems: " + debugProblems("; "))
+                ) + ")";
     }
 }

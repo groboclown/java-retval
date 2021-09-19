@@ -10,8 +10,9 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
-import net.groboclown.retval.ProblemCollector;
+import net.groboclown.retval.Ret;
 import net.groboclown.retval.RetVal;
+import net.groboclown.retval.RetVoid;
 import net.groboclown.retval.WarningVal;
 import net.groboclown.retval.problems.LocalizedProblem;
 
@@ -85,22 +86,22 @@ public class ConfigurationWriter {
             @Nonnull final Collection<ProjectUser> projectUsers
     ) {
         final Map<String, ProjectUser> distinctUsers = new HashMap<>();
-        final ProblemCollector problems = ProblemCollector.from();
-
-        for (final ProjectUser projectUser : projectUsers) {
-            // Just replace the existing one with the new value, but capture the
-            // old one to see if there's a difference between them.
-            final ProjectUser existing = distinctUsers.put(projectUser.getUser(), projectUser);
-            if (existing != null
-                    && (! Objects.equals(existing.getEmail(), projectUser.getEmail())
-                    || ! Objects.equals(existing.getRealName(), projectUser.getRealName()))) {
-                problems.with(LocalizedProblem.from(
-                        "User " + projectUser.getUser() + " defined differently in projects "
-                        + projectUser.getProjectId() + " and " + existing.getProjectId()));
-            }
-        }
-
-        return WarningVal.from(distinctUsers.values(), problems);
+        return Ret
+            .collectProblems()
+            .validateEach(projectUsers, (projectUser) -> {
+                // Just replace the existing one with the new value, but capture the
+                // old one to see if there's a difference between them.
+                final ProjectUser existing = distinctUsers.put(projectUser.getUser(), projectUser);
+                if (existing != null
+                        && (! Objects.equals(existing.getEmail(), projectUser.getEmail())
+                        || ! Objects.equals(existing.getRealName(), projectUser.getRealName()))) {
+                    return RetVoid.fromProblem(LocalizedProblem.from(
+                            "User " + projectUser.getUser() + " defined differently in projects "
+                            + projectUser.getProjectId() + " and " + existing.getProjectId()));
+                }
+                return null;
+            })
+            .asWarning(distinctUsers.values());
     }
 
     /**
@@ -114,25 +115,32 @@ public class ConfigurationWriter {
             @Nonnull final Collection<ProjectUser> projectUsers
     ) {
         final Map<String, ProjectUser> distinctProjects = new HashMap<>();
-        final ProblemCollector problems = ProblemCollector.from();
-
-        for (final ProjectUser projectUser : projectUsers) {
-            // Just replace the existing one with the new value, but capture the
-            // old one to see if there's a difference between them.
-            final ProjectUser existing = distinctProjects.put(
-                    projectUser.getProjectId(), projectUser
-            );
-            if (existing != null
-                    && (! Objects.equals(existing.getProjectName(), projectUser.getProjectName())
-                    || ! Objects.equals(existing.getProjectUrl(), projectUser.getProjectUrl()))) {
-                problems.with(LocalizedProblem.from(
-                        "Project " + projectUser.getProjectId()
-                        + " defined differently in users "
-                        + projectUser.getUser() + " and " + existing.getUser()));
-            }
-        }
-
-        return WarningVal.from(distinctProjects.values(), problems);
+        return Ret
+            .collectProblems()
+            .validateEach(projectUsers, (projectUser) -> {
+                // Just replace the existing one with the new value, but capture the
+                // old one to see if there's a difference between them.
+                final ProjectUser existing = distinctProjects.put(
+                        projectUser.getProjectId(), projectUser
+                );
+                if (
+                        existing != null
+                        && (! Objects.equals(
+                                existing.getProjectName(),
+                                projectUser.getProjectName()
+                            ) || ! Objects.equals(
+                                existing.getProjectUrl(),
+                                projectUser.getProjectUrl())
+                        )
+                ) {
+                    return RetVal.fromProblem(LocalizedProblem.from(
+                            "Project " + projectUser.getProjectId()
+                            + " defined differently in users "
+                            + projectUser.getUser() + " and " + existing.getUser()));
+                }
+                return null;
+            })
+            .asWarning(distinctProjects.values());
     }
 
 

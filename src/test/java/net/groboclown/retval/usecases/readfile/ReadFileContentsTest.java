@@ -6,7 +6,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
-import net.groboclown.retval.monitor.MockCheckMonitor;
+import net.groboclown.retval.monitor.MockProblemMonitor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Test the use case for wrapping an exception without an error.
  */
 class ReadFileContentsTest {
-    MockCheckMonitor monitor;
+    MockProblemMonitor monitor;
 
     @Test
     void readFromClasspath() {
@@ -32,13 +32,13 @@ class ReadFileContentsTest {
         );
         assertEquals(
                 List.of(),
-                this.monitor.getNeverChecked()
+                this.monitor.getNeverObserved()
         );
     }
 
     @BeforeEach
     void beforeEach() {
-        this.monitor = MockCheckMonitor.setup();
+        this.monitor = MockProblemMonitor.setup();
     }
 
     @AfterEach

@@ -122,10 +122,10 @@ $('.navPadding').css('padding-top', $('.fixedNav').css("height"));
 <li>java.lang.Object</li>
 <li>
 <ul class="inheritance">
-<li><a href="CheckMonitor.html" title="class in net.groboclown.retval.monitor">net.groboclown.retval.monitor.CheckMonitor</a></li>
+<li><a href="CheckMonitor.html" title="class in net.groboclown.retval.monitor">net.groboclown.retval.monitor.ObservedMonitor</a></li>
 <li>
 <ul class="inheritance">
-<li>net.groboclown.retval.monitor.NoOpCheckMonitor</li>
+<li>net.groboclown.retval.monitor.NoOpObservedMonitor</li>
 </ul>
 </li>
 </ul>
@@ -152,7 +152,7 @@ extends <a href="CheckMonitor.html" title="class in net.groboclown.retval.monito
 </a>
 <h3>Nested Class Summary</h3>
 <ul class="blockList">
-<li class="blockList"><a id="nested.classes.inherited.from.class.net.groboclown.retval.monitor.CheckMonitor">
+<li class="blockList"><a id="nested.classes.inherited.from.class.net.groboclown.retval.monitor.ObservedMonitor">
 <!--   -->
 </a>
 <h3>Nested classes/interfaces inherited from class&nbsp;net.groboclown.retval.monitor.<a href="CheckMonitor.html" title="class in net.groboclown.retval.monitor">CheckMonitor</a></h3>
@@ -176,12 +176,12 @@ extends <a href="CheckMonitor.html" title="class in net.groboclown.retval.monito
 <th class="colLast" scope="col">Description</th>
 </tr>
 <tr class="altColor">
-<td class="colFirst"><code>static net.groboclown.retval.monitor.NoOpCheckMonitor.NoOpCheckableListener</code></td>
+<td class="colFirst"><code>static net.groboclown.retval.monitor.NoOpObservedMonitor.NoOpCheckableListener</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#CHECKABLE_LISTENER">CHECKABLE_LISTENER</a></span></code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
 <tr class="rowColor">
-<td class="colFirst"><code>static net.groboclown.retval.monitor.NoOpCheckMonitor.NoOpCloseableListener</code></td>
+<td class="colFirst"><code>static net.groboclown.retval.monitor.NoOpObservedMonitor.NoOpListener</code></td>
 <th class="colSecond" scope="row"><code><span class="memberNameLink"><a href="#CLOSEABLE_LISTENER">CLOSEABLE_LISTENER</a></span></code></th>
 <td class="colLast">&nbsp;</td>
 </tr>
@@ -248,11 +248,11 @@ extends <a href="CheckMonitor.html" title="class in net.groboclown.retval.monito
 </tr>
 </table>
 <ul class="blockList">
-<li class="blockList"><a id="methods.inherited.from.class.net.groboclown.retval.monitor.CheckMonitor">
+<li class="blockList"><a id="methods.inherited.from.class.net.groboclown.retval.monitor.ObservedMonitor">
 <!--   -->
 </a>
 <h3>Methods inherited from class&nbsp;net.groboclown.retval.monitor.<a href="CheckMonitor.html" title="class in net.groboclown.retval.monitor">CheckMonitor</a></h3>
-<code><a href="CheckMonitor.html#getInstance()">getInstance</a>, <a href="CheckMonitor.html#setInstance(net.groboclown.retval.monitor.CheckMonitor)">setInstance</a></code></li>
+<code><a href="CheckMonitor.html#getInstance()">getInstance</a>, <a href="CheckMonitor.html#setInstance(net.groboclown.retval.monitor.ObservedMonitor)">setInstance</a></code></li>
 </ul>
 <ul class="blockList">
 <li class="blockList"><a id="methods.inherited.from.class.java.lang.Object">
@@ -283,7 +283,7 @@ extends <a href="CheckMonitor.html" title="class in net.groboclown.retval.monito
 <ul class="blockList">
 <li class="blockList">
 <h4>CLOSEABLE_LISTENER</h4>
-<pre>public static final&nbsp;net.groboclown.retval.monitor.NoOpCheckMonitor.NoOpCloseableListener CLOSEABLE_LISTENER</pre>
+<pre>public static final&nbsp;net.groboclown.retval.monitor.NoOpObservedMonitor.NoOpListener CLOSEABLE_LISTENER</pre>
 </li>
 </ul>
 <a id="CHECKABLE_LISTENER">
@@ -292,7 +292,7 @@ extends <a href="CheckMonitor.html" title="class in net.groboclown.retval.monito
 <ul class="blockListLast">
 <li class="blockList">
 <h4>CHECKABLE_LISTENER</h4>
-<pre>public static final&nbsp;net.groboclown.retval.monitor.NoOpCheckMonitor.NoOpCheckableListener CHECKABLE_LISTENER</pre>
+<pre>public static final&nbsp;net.groboclown.retval.monitor.NoOpObservedMonitor.NoOpCheckableListener CHECKABLE_LISTENER</pre>
 </li>
 </ul>
 </li>

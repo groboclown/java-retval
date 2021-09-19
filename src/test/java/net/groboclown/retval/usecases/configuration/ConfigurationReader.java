@@ -11,10 +11,8 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import net.groboclown.retval.ProblemCollector;
 import net.groboclown.retval.Ret;
 import net.groboclown.retval.RetVal;
-import net.groboclown.retval.ValueAccumulator;
 import net.groboclown.retval.WarningVal;
 import net.groboclown.retval.problems.FileProblem;
 import net.groboclown.retval.problems.LocalizedProblem;
@@ -59,7 +57,7 @@ public class ConfigurationReader {
         // are valid, to help gather as many problems as possible without going too deep in
         // validating the whole file.
         final RetVal<Collection<UserBuilder>> userListRes =
-                ValueAccumulator.<UserBuilder>from()
+                Ret.<UserBuilder>accumulateValues()
                 // This can only be done because the call to getProjectUsers doesn't require
                 // a valid value during project parse time.
                 .withEach(projectRes.getValue().getProjectUsers(), config::loadUser)
@@ -110,7 +108,7 @@ public class ConfigurationReader {
     private RetVal<UserBuilder> loadUser(@Nonnull final String userId) {
         final UserBuilder builder = new UserBuilder();
         builder.setUser(userId);
-        return ProblemCollector.from()
+        return Ret.collectProblems()
             .withValue(loadRealNameFor(userId), builder::setRealName)
             .withValue(loadEmailFor(userId), builder::setEmail)
             .complete(builder);
@@ -181,7 +179,7 @@ public class ConfigurationReader {
         return
                 // A ValueAccumulator gathers values (here, Strings) and problems for a final
                 // RetVal generation.
-                ValueAccumulator.<String>from()
+                Ret.<String>accumulateValues()
 
             // withEach loops over the first RetVal<Collection> collection values (or gathers the
             // problems), and with each item it processes it through the second argument function

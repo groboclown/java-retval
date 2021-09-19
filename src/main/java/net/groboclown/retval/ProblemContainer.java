@@ -68,4 +68,14 @@ public interface ProblemContainer {
      */
     @Nonnull
     String debugProblems(@Nonnull String joinedWith);
+
+    /**
+     * Add all problems in this container into the argument.  This has a very specific
+     * usage to indicate that this container, even if it has no problems, is part of a
+     * bigger issue.  Therefore, this is fine to call even if there are no problems in
+     * this container.
+     *
+     * @param problemList a modifiable collection of zero or more problems.
+     */
+    void joinProblemsWith(@Nonnull Collection<Problem> problemList);
 }

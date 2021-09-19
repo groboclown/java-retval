@@ -10,8 +10,8 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import net.groboclown.retval.function.NonnullFunction;
 import net.groboclown.retval.function.NonnullSupplier;
-import net.groboclown.retval.monitor.CheckMonitor;
-import net.groboclown.retval.monitor.NoOpCheckMonitor;
+import net.groboclown.retval.monitor.NoOpObservedMonitor;
+import net.groboclown.retval.monitor.ObservedMonitor;
 
 
 /**
@@ -31,7 +31,7 @@ public class RetVoid implements ProblemContainer {
     private static final RetVoid OK = new RetVoid();
 
     private final List<Problem> problems;
-    private final CheckMonitor.CheckableListener listener;
+    private final ObservedMonitor.Listener listener;
 
     /**
      * Return a void object with no problems.
@@ -40,7 +40,7 @@ public class RetVoid implements ProblemContainer {
      */
     @Nonnull
     public static RetVoid ok() {
-        if (CheckMonitor.getInstance().isTraceEnabled()) {
+        if (ObservedMonitor.getCheckedInstance().isTraceEnabled()) {
             return new RetVoid(Collections.emptyList());
         }
         // Tracing is disabled, so use the more memory efficient version.
@@ -131,7 +131,7 @@ public class RetVoid implements ProblemContainer {
     private RetVoid() {
         // This should only be called for the OK object, which, being a constant,
         // must not incorrectly report errors on the checking.  So use the no-op checker.
-        this.listener = NoOpCheckMonitor.CHECKABLE_LISTENER;
+        this.listener = NoOpObservedMonitor.LISTENER;
         this.problems = Collections.emptyList();
     }
 
@@ -141,38 +141,44 @@ public class RetVoid implements ProblemContainer {
         // This must be ensured on entry as immutable.
         // For RetVoid, the problem list may be empty.
         this.problems = problems;
-        this.listener = CheckMonitor.getInstance().registerErrorInstance(this);
+        this.listener = ObservedMonitor.getCheckedInstance().registerInstance(this);
     }
 
     @Override
     public boolean isProblem() {
-        this.listener.onChecked();
+        this.listener.onObserved();
         return ! this.problems.isEmpty();
     }
 
     @Override
     public boolean hasProblems() {
-        this.listener.onChecked();
+        this.listener.onObserved();
         return ! this.problems.isEmpty();
     }
 
     @Override
     public boolean isOk() {
-        this.listener.onChecked();
-        return this.problems.isEmpty();
+        // This acts as a check only if there is no problem, because there is
+        // no value the developer needs to extract.
+        if (this.problems.isEmpty()) {
+            this.listener.onObserved();
+            return true;
+        }
+        return false;
     }
 
     @Nonnull
     @Override
     public Collection<Problem> anyProblems() {
-        this.listener.onChecked();
+        // This acts as a check, because there is no value to extract.
+        this.listener.onObserved();
         return this.problems;
     }
 
     @Nonnull
     @Override
     public Collection<Problem> validProblems() {
-        this.listener.onChecked();
+        this.listener.onObserved();
         return Ret.enforceHasProblems(this.problems);
     }
 
@@ -201,16 +207,27 @@ public class RetVoid implements ProblemContainer {
      * Return a non-null {@link RetVal} value using a supplier that returns a value.
      * The supplier is called only if this object has no error.
      *
+     * <p>Formally, this doesn't "map" one value to another.  However, for symmetry with the
+     * other Ret classes, it is here called map.
+     *
      * @param supplier functional object that returns a non-null value.
      * @param <R> return value type
      * @return a RetVal, either an error if this object has an error, or the value returned by
      *     the supplier.
      */
     @Nonnull
-    public <R> RetVal<R> thenValue(@Nonnull final NonnullSupplier<R> supplier) {
+    public <R> RetVal<R> map(@Nonnull final NonnullSupplier<R> supplier) {
         return thenWrapVal(() -> RetVal.ok(supplier.get()));
     }
 
+    /**
+     * If there is no problem, run the supplier and return its value.  Otherwise, return
+     * this object's problems.
+     *
+     * @param supplier supplier of the return value; run only if this object has no problems.
+     * @param <R> return value type
+     * @return the problems in this object, or the supplier's return value.
+     */
     @Nonnull
     public <R> RetNullable<R> thenNullable(
             @Nonnull final NonnullSupplier<RetNullable<R>> supplier
@@ -218,22 +235,55 @@ public class RetVoid implements ProblemContainer {
         return thenWrapNullable(supplier);
     }
 
+
+    /**
+     * Return a non-null {@link RetNullable} value using a supplier that returns a value.
+     * The supplier is called only if this object has no error.
+     *
+     * <p>Formally, this doesn't "map" one value to another.  However, for symmetry with the
+     * other Ret classes, it is here called map.
+     *
+     * @param supplier functional object that returns a non-null value.
+     * @param <R> return value type
+     * @return a RetVal, either an error if this object has an error, or the value returned by
+     *     the supplier.
+     */
     @Nonnull
-    public <R> RetNullable<R> thenNullableValue(@Nonnull final Supplier<R> supplier) {
+    public <R> RetNullable<R> mapNullable(@Nonnull final Supplier<R> supplier) {
         return thenWrapNullable(() -> RetNullable.ok(supplier.get()));
     }
 
+
+    /**
+     * Return the supplier if there is no problem.
+     *
+     * @param supplier function to run
+     * @return this object if there are problems in this object, otherwise the supplier's
+     *      return value.
+     */
     @Nonnull
     public RetVoid thenVoid(@Nonnull final NonnullSupplier<RetVoid> supplier) {
-        return thenWrapVoid(supplier);
+        if (! this.problems.isEmpty()) {
+            // Return this object without a check.
+            return this;
+        }
+        // Otherwise, pass the check onto the supplier's return value.
+        this.listener.onObserved();
+        return supplier.get();
     }
 
+    /**
+     * Run the runnable if there is no problem.
+     *
+     * @param runnable function to run
+     * @return this object.
+     */
     @Nonnull
     public RetVoid thenRun(@Nonnull final Runnable runnable) {
-        return thenWrapVoid(() -> {
+        if (this.problems.isEmpty()) {
             runnable.run();
-            return ok();
-        });
+        }
+        return this;
     }
 
     /**
@@ -248,7 +298,7 @@ public class RetVoid implements ProblemContainer {
             @Nonnull final NonnullSupplier<R> errorFactory
     ) {
         // Pass the checking ownership to the created object.
-        this.listener.onChecked();
+        this.listener.onObserved();
 
         if (hasProblems()) {
             return errorFactory.get();
@@ -268,12 +318,6 @@ public class RetVoid implements ProblemContainer {
     protected <R> RetVal<R> thenWrapVal(@Nonnull final NonnullSupplier<RetVal<R>> supplier) {
         // Be as memory efficient as possible.
         return thenWrap(supplier, () -> new RetVal<>(this.problems));
-    }
-
-    @Nonnull
-    protected RetVoid thenWrapVoid(@Nonnull final NonnullSupplier<RetVoid> supplier) {
-        // Be as memory efficient as possible.
-        return thenWrap(supplier, () -> new RetVoid(this.problems));
     }
 
 
@@ -330,7 +374,7 @@ public class RetVoid implements ProblemContainer {
             @Nonnull final NonnullFunction<List<Problem>, R> errorFactory
     ) {
         // Pass the checking ownership to the created object.
-        this.listener.onChecked();
+        this.listener.onObserved();
         final R value = supplier.get();
         if (hasProblems() && ! value.hasProblems()) {
             // super memory efficient version
@@ -341,5 +385,22 @@ public class RetVoid implements ProblemContainer {
             return errorFactory.apply(Ret.joinRetProblems(this, value));
         }
         return value;
+    }
+
+    @Override
+    public void joinProblemsWith(@Nonnull final Collection<Problem> problemList) {
+        // This acts as closing off this value and passing the problem state to the
+        // list.
+        this.listener.onObserved();
+        problemList.addAll(this.problems);
+    }
+
+    @Override
+    public String toString() {
+        return "RetVoid("
+                + (this.problems.isEmpty()
+                    ? "ok"
+                    : (this.problems.size() + " problems: " + debugProblems("; "))
+                ) + ")";
     }
 }

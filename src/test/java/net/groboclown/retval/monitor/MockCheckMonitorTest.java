@@ -1,6 +1,7 @@
 // Released under the MIT License.
 package net.groboclown.retval.monitor;
 
+import net.groboclown.retval.ProblemContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MockCheckMonitorTest {
-    private CheckMonitor original;
+    private ObservedMonitor<ProblemContainer> original;
 
     /**
      * Test both setup and tearDown logic, since setup is run with every invocation,
@@ -16,36 +17,36 @@ class MockCheckMonitorTest {
      */
     @Test
     void setup_tearDown() {
-        final NoOpCheckMonitor replacement = new NoOpCheckMonitor();
-        CheckMonitor.setInstance(replacement);
+        final NoOpObservedMonitor<ProblemContainer> replacement = new NoOpObservedMonitor<>();
+        ObservedMonitor.setCheckedInstance(replacement);
 
-        final MockCheckMonitor mock = MockCheckMonitor.setup();
-        assertSame(mock, CheckMonitor.getInstance());
+        final MockProblemMonitor mock = MockProblemMonitor.setup();
+        assertSame(mock, ObservedMonitor.getCheckedInstance());
         try {
-            MockCheckMonitor.setup();
+            MockProblemMonitor.setup();
             fail("Did not throw ISE");
         } catch (final IllegalStateException e) {
             // skip exception inspection.
         }
         // Ensure the registered instance didn't change.
-        assertSame(mock, CheckMonitor.getInstance());
+        assertSame(mock, ObservedMonitor.getCheckedInstance());
 
         // Tear down.
         mock.tearDown();
-        assertSame(replacement, CheckMonitor.getInstance());
+        assertSame(replacement, ObservedMonitor.getCheckedInstance());
 
         // Should only work if the mock is current.
         mock.tearDown();
-        assertSame(replacement, CheckMonitor.getInstance());
+        assertSame(replacement, ObservedMonitor.getCheckedInstance());
 
-        CheckMonitor.setInstance(this.original);
+        ObservedMonitor.setCheckedInstance(this.original);
         mock.tearDown();
-        assertSame(this.original, CheckMonitor.getInstance());
+        assertSame(this.original, ObservedMonitor.getCheckedInstance());
 
         // If we run it again and it's active, it will restore itself again.
-        CheckMonitor.setInstance(mock);
+        ObservedMonitor.setCheckedInstance(mock);
         mock.tearDown();
-        assertSame(replacement, CheckMonitor.getInstance());
+        assertSame(replacement, ObservedMonitor.getCheckedInstance());
     }
 
     @Test
@@ -78,14 +79,14 @@ class MockCheckMonitorTest {
 
     @BeforeEach
     void beforeEach() {
-        this.original = CheckMonitor.getInstance();
-        CheckMonitor.setInstance(new NoOpCheckMonitor());
+        this.original = ObservedMonitor.getCheckedInstance();
+        ObservedMonitor.setCheckedInstance(new NoOpObservedMonitor<>());
     }
 
     @AfterEach
     void afterEach() {
         if (this.original != null) {
-            CheckMonitor.setInstance(this.original);
+            ObservedMonitor.setCheckedInstance(this.original);
         }
     }
 }

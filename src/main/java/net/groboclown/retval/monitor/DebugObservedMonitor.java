@@ -11,20 +11,19 @@ import net.groboclown.retval.ProblemContainer;
 /**
  * Maintains information about objects that need to be checked in a phantom reference cleaner.
  */
-public class DebugCheckMonitor extends CheckMonitor {
-    private final Logger logger = Logger.getLogger(DebugCheckMonitor.class.getName());
+public class DebugObservedMonitor<T> extends ObservedMonitor<T> {
+    private final Logger logger = Logger.getLogger(DebugObservedMonitor.class.getName());
     private final Cleaner cleaner = Cleaner.create();
+    private final String name;
 
-    @Nonnull
-    @Override
-    public CloseableListener registerCloseableInstance(@Nonnull final AutoCloseable instance) {
-        return new LocalCloseableListener(instance, this.cleaner, this.logger);
+    public DebugObservedMonitor(@Nonnull final String name) {
+        this.name = name;
     }
 
     @Nonnull
     @Override
-    public CheckableListener registerErrorInstance(@Nonnull final ProblemContainer instance) {
-        return new LocalCheckableListener(instance, this.cleaner, this.logger);
+    public Listener registerInstance(@Nonnull final T instance) {
+        return new LocalListener(this.name, instance, this.cleaner, this.logger);
     }
 
     @Override
@@ -60,40 +59,20 @@ public class DebugCheckMonitor extends CheckMonitor {
         }
     }
 
-
-    private static class LocalCloseableListener implements CloseableListener {
+    private static class LocalListener implements Listener {
         private final NotCompleted state;
         private final Cleaner.Cleanable cleanable;
 
-        LocalCloseableListener(
-                @Nonnull final AutoCloseable object,
+        LocalListener(
+                @Nonnull final String name, @Nonnull final Object object,
                 @Nonnull final Cleaner cleaner, @Nonnull final Logger logger
         ) {
-            this.state = new NotCompleted(logger, "Did not close " + object);
+            this.state = new NotCompleted(logger, name + " not called: " + object);
             this.cleanable = cleaner.register(object, this.state);
         }
 
         @Override
-        public void onClosed() {
-            this.state.close();
-            this.cleanable.clean();
-        }
-    }
-
-    private static class LocalCheckableListener implements CheckableListener {
-        private final NotCompleted state;
-        private final Cleaner.Cleanable cleanable;
-
-        LocalCheckableListener(
-                @Nonnull final ProblemContainer object,
-                @Nonnull final Cleaner cleaner, @Nonnull final Logger logger
-        ) {
-            this.state = new NotCompleted(logger, "Did not check for errors: " + object);
-            this.cleanable = cleaner.register(object, this.state);
-        }
-
-        @Override
-        public void onChecked() {
+        public void onObserved() {
             this.state.close();
             this.cleanable.clean();
         }

@@ -228,7 +228,7 @@ public class ValueAccumulator<T> implements ProblemContainer {
      * @return warning version of the accumulator.
      */
     @Nonnull
-    public WarningVal<Collection<T>> asWarnings() {
+    public WarningVal<Collection<T>> asWarning() {
         return WarningVal.from(this.getValues(), this);
     }
 
@@ -264,5 +264,10 @@ public class ValueAccumulator<T> implements ProblemContainer {
     @Override
     public String debugProblems(@Nonnull final String joinedWith) {
         return Ret.joinProblemMessages(joinedWith, this.problems);
+    }
+
+    @Override
+    public void joinProblemsWith(@Nonnull final Collection<Problem> problemList) {
+        problemList.addAll(this.problems);
     }
 }

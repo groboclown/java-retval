@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import net.groboclown.retval.RetVal;
-import net.groboclown.retval.monitor.MockCheckMonitor;
+import net.groboclown.retval.monitor.MockProblemMonitor;
 import net.groboclown.retval.problems.LocalizedProblem;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,13 +16,13 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ConfigurationWriterTest {
-    MockCheckMonitor monitor;
+    MockProblemMonitor monitor;
 
     @Test
     void writeConfigurationFrom_empty() {
         final RetVal<Properties> res = ConfigurationWriter.writeConfigurationFrom(List.of());
         // Ensure that there's no dangling checks.
-        assertEquals(List.of(res), this.monitor.getNeverChecked());
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
 
         // This is a more effective way of checking that there were no problems.
         // Just checking true/false on isOk() will not tell you in the error report
@@ -56,7 +56,7 @@ class ConfigurationWriterTest {
                 pu11, pu12, pu21, pu23
         ));
         // Ensure that there's no dangling checks.
-        assertEquals(List.of(res), this.monitor.getNeverChecked());
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
 
         // This is a more effective way of checking that there were no problems.
         // Just checking true/false on isOk() will not tell you in the error report
@@ -98,7 +98,7 @@ class ConfigurationWriterTest {
                 pu1, pu2
         ));
         // Ensure that there's no dangling checks.
-        assertEquals(List.of(res), this.monitor.getNeverChecked());
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
 
         // This is a more effective way of checking that there were no problems.
         // Just checking true/false on isOk() will not tell you in the error report
@@ -115,7 +115,7 @@ class ConfigurationWriterTest {
 
     @BeforeEach
     void beforeEach() {
-        this.monitor = MockCheckMonitor.setup();
+        this.monitor = MockProblemMonitor.setup();
         // For robustness...
         this.monitor.traceEnabled = true;
     }

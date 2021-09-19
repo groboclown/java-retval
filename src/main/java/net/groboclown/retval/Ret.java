@@ -105,7 +105,7 @@ public class Ret {
         if (retSet != null) {
             for (final ProblemContainer ret : retSet) {
                 if (ret != null) {
-                    all.addAll(ret.anyProblems());
+                    ret.joinProblemsWith(all);
                 }
             }
         }
@@ -113,7 +113,7 @@ public class Ret {
             if (rets != null) {
                 for (final ProblemContainer ret : rets) {
                     if (ret != null) {
-                        all.addAll(ret.anyProblems());
+                        ret.joinProblemsWith(all);
                     }
                 }
             }
@@ -138,11 +138,11 @@ public class Ret {
     ) {
         final List<Problem> all = new ArrayList<>();
         if (ret != null) {
-            all.addAll(ret.anyProblems());
+            ret.joinProblemsWith(all);
         }
         for (final ProblemContainer container : rets) {
             if (container != null) {
-                all.addAll(container.anyProblems());
+                container.joinProblemsWith(all);
             }
         }
         if (all.isEmpty()) {

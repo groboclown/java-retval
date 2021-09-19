@@ -15,8 +15,8 @@ To develop the library, you'll need to fork the repository and submit changes ba
 * Fill in the remaining placeholder functions.
 * Add in JavaDoc everywhere.  This is partially done.
 * Get up to 100% code coverage in tests.
-* Add in Closeable support for the `ret` values.  This will require careful use of the `CloseableCollection`.
 * API must be closer examined to ensure proper use cases for each top-level class and method.
+* Move the development guide to the github.io page off of the readme file frontmatter.
 
 
 #### Code Style Guide

@@ -10,7 +10,7 @@ import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.groboclown.retval.function.NonnullReturnFunction;
-import net.groboclown.retval.monitor.CheckMonitor;
+import net.groboclown.retval.monitor.ObservedMonitor;
 
 /**
  * A problem container that contains a nullable value or problems, but
@@ -29,7 +29,7 @@ public class RetNullable<T> implements ProblemContainer {
     //   For now, the logic is duplicated for the sake of memory.
 
     private final List<Problem> problems;
-    private final CheckMonitor.CheckableListener listener;
+    private final ObservedMonitor.Listener listener;
     private final T value;
 
     @Nonnull
@@ -66,13 +66,13 @@ public class RetNullable<T> implements ProblemContainer {
             throw new IllegalArgumentException("no problems defined");
         }
         this.problems = problems;
-        this.listener = CheckMonitor.getInstance().registerErrorInstance(this);
+        this.listener = ObservedMonitor.getCheckedInstance().registerInstance(this);
         this.value = null;
     }
 
     private RetNullable(@Nullable final T value) {
         this.problems = Collections.emptyList();
-        this.listener = CheckMonitor.getInstance().registerErrorInstance(this);
+        this.listener = ObservedMonitor.getCheckedInstance().registerInstance(this);
         this.value = value;
     }
 
@@ -185,7 +185,7 @@ public class RetNullable<T> implements ProblemContainer {
     public RetVoid forwardVoidProblems() {
         Ret.enforceHasProblems(this.problems);
         // pass the check to the returned value
-        this.listener.onChecked();
+        this.listener.onObserved();
         // memory efficient access.
         return new RetVoid(this.problems);
     }
@@ -229,7 +229,7 @@ public class RetNullable<T> implements ProblemContainer {
         final ProblemContainer discovered = checker.apply(this.value);
         if (discovered != null && discovered.hasProblems()) {
             // Move the checking to the returned value.
-            this.listener.onChecked();
+            this.listener.onObserved();
             return RetNullable.fromProblems(this, discovered);
         }
         return this;
@@ -371,44 +371,64 @@ public class RetNullable<T> implements ProblemContainer {
 
     @Override
     public boolean isProblem() {
-        this.listener.onChecked();
+        this.listener.onObserved();
         return ! this.problems.isEmpty();
     }
 
     @Override
     public boolean hasProblems() {
-        this.listener.onChecked();
+        this.listener.onObserved();
         return ! this.problems.isEmpty();
     }
 
     @Override
     public boolean isOk() {
-        this.listener.onChecked();
+        this.listener.onObserved();
         return this.problems.isEmpty();
     }
 
     @Nonnull
     @Override
     public Collection<Problem> anyProblems() {
-        // Consider this as checking for problems.  Generally, this combines the problems
+        // Consider this as checking for problems only if there are problems.
+        // Generally, this combines the problems
         // in this instance with a larger collection, which can itself be used to check if any
         // of the values had problems.
-        this.listener.onChecked();
+        if (! this.problems.isEmpty()) {
+            this.listener.onObserved();
+        }
         return this.problems;
     }
 
     @Nonnull
     @Override
     public Collection<Problem> validProblems() {
-        // Mark as checked before ensuring it has problems.
-        this.listener.onChecked();
-        Ret.enforceHasProblems(this.problems);
-        return this.problems;
+        // Mark as checked before ensuring it has problems, so that the
+        // developer isn't bombarded with double errors.
+        this.listener.onObserved();
+        return Ret.enforceHasProblems(this.problems);
     }
 
     @Nonnull
     @Override
     public String debugProblems(@Nonnull final String joinedWith) {
         return Ret.joinProblemMessages(joinedWith, this.problems);
+    }
+
+    @Override
+    public void joinProblemsWith(@Nonnull final Collection<Problem> problemList) {
+        // This acts as closing off this value and passing the problem state to the
+        // list.
+        this.listener.onObserved();
+        problemList.addAll(this.problems);
+    }
+
+    @Override
+    public String toString() {
+        return "RetNullable("
+                + (this.problems.isEmpty()
+                        ? ("value: " + this.value)
+                        : (this.problems.size() + " problems: " + debugProblems("; "))
+                ) + ")";
     }
 }

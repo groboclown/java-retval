@@ -4,16 +4,16 @@ package net.groboclown.retval.usecases.configuration;
 import java.util.List;
 import java.util.Properties;
 import net.groboclown.retval.RetVal;
-import net.groboclown.retval.monitor.MockCheckMonitor;
+import net.groboclown.retval.monitor.MockProblemMonitor;
 import net.groboclown.retval.problems.LocalizedProblem;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ConfigurationReaderTest {
-    MockCheckMonitor monitor;
+    MockProblemMonitor monitor;
 
     @Test
     void test_readProjectUser_empty() {
@@ -27,7 +27,7 @@ class ConfigurationReaderTest {
         );
         assertEquals(
                 List.of(),
-                this.monitor.getNeverChecked()
+                this.monitor.getNeverObserved()
         );
     }
 
@@ -40,11 +40,12 @@ class ConfigurationReaderTest {
                 List.of(
                         LocalizedProblem.from("project `p1` is not registered")
                 ),
+                // This should count as a check.
                 res.anyProblems()
         );
         assertEquals(
                 List.of(),
-                this.monitor.getNeverChecked()
+                this.monitor.getNeverObserved()
         );
     }
 
@@ -63,13 +64,14 @@ class ConfigurationReaderTest {
         );
         assertEquals(
                 List.of(),
-                this.monitor.getNeverChecked()
+                this.monitor.getNeverObserved()
         );
     }
 
     @BeforeEach
     void beforeEach() {
-        this.monitor = MockCheckMonitor.setup();
+        this.monitor = MockProblemMonitor.setup();
+        this.monitor.traceEnabled = true;
     }
 
     @AfterEach

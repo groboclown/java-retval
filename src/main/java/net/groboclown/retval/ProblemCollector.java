@@ -2,10 +2,10 @@
 package net.groboclown.retval;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -83,8 +83,7 @@ public class ProblemCollector implements ProblemContainer {
     public ProblemCollector with(
             @Nonnull final Problem problem,
             @Nonnull final Problem... problems) {
-        this.problems.add(problem);
-        this.problems.addAll(Arrays.asList(problems));
+        this.problems.addAll(Ret.joinProblems(problem, problems));
         return this;
     }
 
@@ -99,10 +98,7 @@ public class ProblemCollector implements ProblemContainer {
     public ProblemCollector with(
             @Nonnull final ProblemContainer container,
             @Nonnull final ProblemContainer... containers) {
-        this.problems.addAll(container.anyProblems());
-        for (final ProblemContainer pc : containers) {
-            this.problems.addAll(pc.anyProblems());
-        }
+        this.problems.addAll(Ret.joinRetProblems(container, containers));
         return this;
     }
 
@@ -152,6 +148,8 @@ public class ProblemCollector implements ProblemContainer {
             @Nonnull final RetVal<T> value,
             @Nonnull final NonnullConsumer<T> setter
     ) {
+        // This method doesn't call joinProblems, because the error state and value are
+        // pulled in.
         this.problems.addAll(value.anyProblems());
         if (value.isOk()) {
             setter.accept(value.result());
@@ -173,9 +171,38 @@ public class ProblemCollector implements ProblemContainer {
             @Nonnull final RetNullable<T> value,
             @Nonnull final Consumer<T> setter
     ) {
+        // This method doesn't call joinProblems, because the error state and value are
+        // pulled in.
         this.problems.addAll(value.anyProblems());
         if (value.isOk()) {
             setter.accept(value.result());
+        }
+        return this;
+    }
+
+    /**
+     * For each item in the {@literal values} collection, the function is
+     * called, giving it a chance to return problems associated with the
+     * value.  The function may return null to indicate no problems.
+     *
+     * <p>This function does not have a requirement on nullability, as that is
+     * entirely within the domain of the caller to track.
+     *
+     * @param values collection of values to call into the validation function.  This will be
+     *               done for each item, irrespective of the active problem state.
+     * @param validateFunc function called for each entry to validate.
+     * @return this instance.
+     */
+    @Nonnull
+    public <T> ProblemCollector validateEach(
+            @Nonnull final Collection<T> values,
+            @Nonnull final Function<T, ProblemContainer> validateFunc
+    ) {
+        for (final T value : values) {
+            final ProblemContainer res = validateFunc.apply(value);
+            if (res != null) {
+                res.joinProblemsWith(this.problems);
+            }
         }
         return this;
     }
@@ -294,7 +321,7 @@ public class ProblemCollector implements ProblemContainer {
     }
 
     @Nonnull
-    public <T> WarningVal<T> warn(@Nonnull final T value) {
+    public <T> WarningVal<T> asWarning(@Nonnull final T value) {
         return WarningVal.from(value, this);
     }
 
@@ -330,5 +357,10 @@ public class ProblemCollector implements ProblemContainer {
     @Override
     public String debugProblems(@Nonnull final String joinedWith) {
         return Ret.joinProblemMessages(joinedWith, this.problems);
+    }
+
+    @Override
+    public void joinProblemsWith(@Nonnull final Collection<Problem> problemList) {
+        problemList.addAll(this.problems);
     }
 }
