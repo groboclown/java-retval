@@ -33,7 +33,7 @@ jacocoTestCoverageVerification {
             limit {
                 // TODO raise this to 1.0 after build setup is done.
                 // Is there a way to make this branch coverage?
-                minimum = 0.52
+                minimum = 0.62
             }
         }
     }

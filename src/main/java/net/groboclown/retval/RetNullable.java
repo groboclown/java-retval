@@ -10,6 +10,7 @@ import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.groboclown.retval.function.NonnullReturnFunction;
+import net.groboclown.retval.function.NonnullSupplier;
 import net.groboclown.retval.monitor.ObservedMonitor;
 
 /**
@@ -47,8 +48,11 @@ public class RetNullable<T> implements ProblemContainer {
 
     @SafeVarargs
     @Nonnull
-    public static <T> RetNullable<T> fromProblem(@Nonnull final Iterable<Problem>... problems) {
-        throw new IllegalStateException();
+    public static <T> RetNullable<T> fromProblem(
+            @Nonnull final Collection<Problem> problem,
+            @Nonnull final Collection<Problem>... problems
+    ) {
+        return new RetNullable<>(Ret.joinProblemSets(problem, problems));
     }
 
     @Nonnull
@@ -57,6 +61,15 @@ public class RetNullable<T> implements ProblemContainer {
             @Nonnull final ProblemContainer... problems
     ) {
         return new RetNullable<>(Ret.joinRetProblems(problem, problems));
+    }
+
+    @SafeVarargs
+    @Nonnull
+    public static <T> RetNullable<T> fromProblems(
+            @Nonnull final Collection<ProblemContainer> problem,
+            @Nonnull final Collection<ProblemContainer>... problems
+    ) {
+        return new RetNullable<>(Ret.joinRetProblemSets(problem, problems));
     }
 
     // package-protected to allow for memory efficient problem passing.
@@ -152,7 +165,11 @@ public class RetNullable<T> implements ProblemContainer {
      */
     @Nonnull
     public <V> RetVal<V> forwardProblems() {
-        throw new IllegalStateException();
+        Ret.enforceHasProblems(this.problems);
+        // pass the check to the returned value
+        this.listener.onObserved();
+        // memory efficient access.
+        return new RetVal<>(this.problems);
     }
 
     /**
@@ -168,7 +185,25 @@ public class RetNullable<T> implements ProblemContainer {
      */
     @Nonnull
     public <V> RetNullable<V> forwardNullableProblems() {
-        throw new IllegalStateException();
+        Ret.enforceHasProblems(this.problems);
+
+        // There are circumstances where returning the exact same object isn't the right
+        // operation, because the returned value should require a separate check, and any call
+        // into this function usually means the caller already performed a check.
+        // If traces are enabled, then the memory efficient form can't be used.
+        if (ObservedMonitor.getCheckedInstance().isTraceEnabled()) {
+            // This object will go out of scope, but the problems are returned, so mark it
+            // as checked.
+            this.listener.onObserved();
+
+            // However, we can still reuse the read-only problem list.  So at least there's that.
+            return new RetNullable<>(this.problems);
+        }
+
+        // Else, use the super memory efficient way.
+        @SuppressWarnings("unchecked")
+        final RetNullable<V> t = (RetNullable<V>) this;
+        return t;
     }
 
     /**
@@ -188,21 +223,6 @@ public class RetNullable<T> implements ProblemContainer {
         this.listener.onObserved();
         // memory efficient access.
         return new RetVoid(this.problems);
-    }
-
-    /**
-     * Convert this instance into a non-null instance with the same value type.  If this instance
-     * has problems, they are returned.  If this value is null and there are no problems, then
-     * a value with a problem indicating the null state is returned.
-     *
-     * <p>A convenience function for situations where a receiver can expect valid uses of a
-     * null value when the source is known to never return a null value.
-     *
-     * @return a nullable version of the same instance.
-     */
-    @Nonnull
-    public RetVal<T> asNonnull() {
-        throw new IllegalStateException();
     }
 
     /**
@@ -253,10 +273,12 @@ public class RetNullable<T> implements ProblemContainer {
      */
     @Nonnull
     public <R> RetVal<R> then(@Nonnull final NonnullReturnFunction<T, RetVal<R>> func) {
-        if (isOk()) {
-            return func.apply(result());
-        }
-        return forwardProblems();
+        return thenWrapped(
+                () -> func.apply(this.value),
+                // forwardProblems hsa its own check semantics
+                false,
+                this::forwardProblems
+        );
     }
 
     /**
@@ -302,7 +324,12 @@ public class RetNullable<T> implements ProblemContainer {
     public <R> RetNullable<R> thenNullable(
             @Nonnull final NonnullReturnFunction<T, RetNullable<R>> func
     ) {
-        throw new IllegalStateException();
+        return thenWrapped(
+                () -> func.apply(this.value),
+                // forwardProblems hsa its own check semantics
+                false,
+                this::forwardNullableProblems
+        );
     }
 
     /**
@@ -321,7 +348,12 @@ public class RetNullable<T> implements ProblemContainer {
      */
     @Nonnull
     public <R> RetNullable<R> mapNullable(@Nonnull final Function<T, R> func) {
-        throw new IllegalStateException();
+        return thenWrapped(
+                () -> RetNullable.ok(func.apply(this.value)),
+                // problem forwarder has its own checking
+                false,
+                this::forwardNullableProblems
+        );
     }
 
     /**
@@ -332,7 +364,14 @@ public class RetNullable<T> implements ProblemContainer {
      */
     @Nonnull
     public RetNullable<T> thenRunNullable(@Nonnull final Runnable runner) {
-        throw new IllegalStateException();
+        // thenWrapped performs a "onChecked" call, and this method
+        // returns "this", so this cannot use the wrapped helper.
+        // By returning "this", it means that the "checked" call can only be done
+        // if this function is considered performing a check, which this isn't.
+        if (this.problems.isEmpty()) {
+            runner.run();
+        }
+        return this;
     }
 
     /**
@@ -366,25 +405,81 @@ public class RetNullable<T> implements ProblemContainer {
      */
     @Nonnull
     public RetVoid thenVoid(@Nonnull final Consumer<T> consumer) {
-        throw new IllegalStateException();
+        return thenWrapped(
+                () -> {
+                    consumer.accept(this.value);
+                    return RetVoid.ok();
+                },
+                // problem condition will pass the check to a new object
+                true,
+                () -> new RetVoid(this.problems));
     }
 
-    @Override
-    public boolean isProblem() {
+    /**
+     * Pass the value of this instance to the consumer, only if there are no problems.  Return
+     * the function's value.
+     *
+     * <p>This call will lose the contained value on return, so it's used to pass on the value
+     * to another object.
+     *
+     * @param func consumer of this value.
+     * @return a response that contains the problem state of the current value.
+     */
+    @Nonnull
+    public RetVoid thenVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func) {
+        return thenWrapped(
+                () -> func.apply(this.value),
+                // problem condition will pass the check to a new object
+                true,
+                () -> new RetVoid(this.problems)
+        );
+    }
+
+    private <R> R thenWrapped(
+            @Nonnull final NonnullSupplier<R> supplier,
+            final boolean problemIsCheck,
+            @Nonnull final NonnullSupplier<R> problemFactory
+    ) {
+        if (! this.problems.isEmpty()) {
+            if (problemIsCheck) {
+                this.listener.onObserved();
+            }
+            return problemFactory.get();
+        }
+
+        // The supplier will always return a new object and, and this method must pass the
+        // checking on to it.
         this.listener.onObserved();
-        return ! this.problems.isEmpty();
+        return supplier.get();
     }
 
     @Override
     public boolean hasProblems() {
-        this.listener.onObserved();
-        return ! this.problems.isEmpty();
+        // This alone does not make a check.  The problems themselves must be extracted or
+        // forwarded.  However, because the result call also does not count as a check,
+        // this will count as the check only if there are no problems.
+        if (this.problems.isEmpty()) {
+            this.listener.onObserved();
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean isProblem() {
+        return hasProblems();
     }
 
     @Override
     public boolean isOk() {
-        this.listener.onObserved();
-        return this.problems.isEmpty();
+        // This alone does not make a check.  The problems themselves must be extracted or
+        // forwarded.  However, because the result call also does not count as a check,
+        // this will count as the check only if there are no problems.
+        if (this.problems.isEmpty()) {
+            this.listener.onObserved();
+            return true;
+        }
+        return false;
     }
 
     @Nonnull
@@ -403,9 +498,7 @@ public class RetNullable<T> implements ProblemContainer {
     @Nonnull
     @Override
     public Collection<Problem> validProblems() {
-        // Mark as checked before ensuring it has problems, so that the
-        // developer isn't bombarded with double errors.
-        this.listener.onObserved();
+        // Just like result() doesn't trigger an observation, so this one doesn't either.
         return Ret.enforceHasProblems(this.problems);
     }
 

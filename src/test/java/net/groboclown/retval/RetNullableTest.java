@@ -5,8 +5,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import net.groboclown.retval.function.NonnullConsumer;
 import net.groboclown.retval.function.NonnullFunction;
+import net.groboclown.retval.function.NonnullReturnFunction;
 import net.groboclown.retval.monitor.MockProblemMonitor;
 import net.groboclown.retval.problems.LocalizedProblem;
 import org.junit.jupiter.api.AfterEach;
@@ -22,12 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-class RetValTest {
+class RetNullableTest {
     MockProblemMonitor monitor;
 
     @Test
     void ok_nonnull() {
-        final RetVal<String> res = RetVal.ok("value");
+        final RetNullable<String> res = RetNullable.ok("value");
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertEquals("value", res.result());
         assertEquals("value", res.getValue());
@@ -39,18 +41,20 @@ class RetValTest {
 
     @Test
     void ok_null() {
-        try {
-            RetVal.ok(null);
-            fail("Did not throw NPE");
-        } catch (final NullPointerException e) {
-            // skip exception inspection
-        }
+        final RetNullable<String> res = RetNullable.ok(null);
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertNull(res.result());
+        assertNull(res.getValue());
+        assertTrue(res.isOk());
+        assertFalse(res.hasProblems());
+        assertFalse(res.isProblem());
+        assertEquals(List.of(), res.anyProblems());
     }
 
     @Test
     void fromProblems_Problem_notNull1() {
         final LocalizedProblem p1 = LocalizedProblem.from("p1");
-        final RetVal<Object> res = RetVal.fromProblem(p1);
+        final RetNullable<Object> res = RetNullable.fromProblem(p1);
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertFalse(res.isOk());
         assertTrue(res.isProblem());
@@ -63,7 +67,7 @@ class RetValTest {
     void fromProblem_Problem_notNull2() {
         final LocalizedProblem p1 = LocalizedProblem.from("p1");
         final LocalizedProblem p2 = LocalizedProblem.from("p2");
-        final RetVal<Object> res = RetVal.fromProblem(p1, p2);
+        final RetNullable<Object> res = RetNullable.fromProblem(p1, p2);
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertFalse(res.isOk());
         assertTrue(res.isProblem());
@@ -78,7 +82,7 @@ class RetValTest {
             // This shows why the API makes the poor choice of passing null values
             // difficult, even though it's a runtime error instead of a compile error.
             // But this is explicit null values instead of possibly null values...
-            RetVal.fromProblem((Problem) null);
+            RetNullable.fromProblem((Problem) null);
             fail("Did not throw IAE");
         } catch (final IllegalArgumentException e) {
             // skip exception inspection
@@ -91,7 +95,7 @@ class RetValTest {
     void fromProblem_Problem_someNull() {
         final LocalizedProblem problem = LocalizedProblem.from("x");
         // Again, explicit null values make the API tricky to work with.
-        final RetVal<Object> res = RetVal.fromProblem(problem, null, null);
+        final RetNullable<Object> res = RetNullable.fromProblem(problem, null, null);
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertEquals(List.of(problem), res.anyProblems());
     }
@@ -100,7 +104,7 @@ class RetValTest {
     void fromProblem_CollectionProblem_notNull1() {
         final LocalizedProblem p1 = LocalizedProblem.from("p1");
         final LocalizedProblem p2 = LocalizedProblem.from("p2");
-        final RetVal<Object> res = RetVal.fromProblem(List.of(p1, p2));
+        final RetNullable<Object> res = RetNullable.fromProblem(List.of(p1, p2));
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertFalse(res.isOk());
         assertTrue(res.isProblem());
@@ -113,7 +117,7 @@ class RetValTest {
     void fromProblem_CollectionProblem_notNull2() {
         final LocalizedProblem p1 = LocalizedProblem.from("p1");
         final LocalizedProblem p2 = LocalizedProblem.from("p2");
-        final RetVal<Object> res = RetVal.fromProblem(List.of(p1), List.of(p2));
+        final RetNullable<Object> res = RetNullable.fromProblem(List.of(p1), List.of(p2));
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertFalse(res.isOk());
         assertTrue(res.isProblem());
@@ -126,7 +130,7 @@ class RetValTest {
     void fromProblem_CollectionProblem_notNull3() {
         final LocalizedProblem p1 = LocalizedProblem.from("p1");
         final LocalizedProblem p2 = LocalizedProblem.from("p2");
-        final RetVal<Object> res = RetVal.fromProblem(List.of(p1, p2), List.of());
+        final RetNullable<Object> res = RetNullable.fromProblem(List.of(p1, p2), List.of());
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertFalse(res.isOk());
         assertTrue(res.isProblem());
@@ -138,7 +142,7 @@ class RetValTest {
     @Test
     void fromProblem_CollectionProblem_empty() {
         try {
-            RetVal.fromProblem(List.of());
+            RetNullable.fromProblem(List.of());
             fail("Did not throw IAE");
         } catch (final IllegalArgumentException e) {
             // skip exception inspection
@@ -153,7 +157,7 @@ class RetValTest {
             // This shows why the API makes the poor choice of passing null values
             // difficult, even though it's a runtime error instead of a compile error.
             // But this is explicit null values instead of possibly null values...
-            RetVal.fromProblem((Collection<Problem>) null);
+            RetNullable.fromProblem((Collection<Problem>) null);
             fail("Did not throw IAE");
         } catch (final IllegalArgumentException e) {
             // skip exception inspection
@@ -168,7 +172,7 @@ class RetValTest {
             // This shows why the API makes the poor choice of passing null values
             // difficult, even though it's a runtime error instead of a compile error.
             // But this is explicit null values instead of possibly null values...
-            RetVal.fromProblem(Arrays.asList(null, null));
+            RetNullable.fromProblem(Arrays.asList(null, null));
             fail("Did not throw IAE");
         } catch (final IllegalArgumentException e) {
             // skip exception inspection
@@ -180,7 +184,7 @@ class RetValTest {
     @Test
     void fromProblem_CollectionProblem_someNull_someEmpty() {
         final LocalizedProblem problem = LocalizedProblem.from("x");
-        final RetVal<Object> res = RetVal.fromProblem(List.of(problem), null, List.of());
+        final RetNullable<Object> res = RetNullable.fromProblem(List.of(problem), null, List.of());
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertEquals(List.of(problem), res.anyProblems());
     }
@@ -188,7 +192,7 @@ class RetValTest {
     @Test
     void fromProblems_ProblemContainer_notNull1() {
         final LocalizedProblem p1 = LocalizedProblem.from("p1");
-        final RetVal<Object> res = RetVal.fromProblems(RetVal.fromProblem(p1));
+        final RetNullable<Object> res = RetNullable.fromProblems(RetVal.fromProblem(p1));
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertFalse(res.isOk());
         assertTrue(res.isProblem());
@@ -201,7 +205,7 @@ class RetValTest {
     void fromProblems_ProblemContainer_notNull2() {
         final LocalizedProblem p1 = LocalizedProblem.from("p1");
         final LocalizedProblem p2 = LocalizedProblem.from("p2");
-        final RetVal<Object> res = RetVal.fromProblems(
+        final RetNullable<Object> res = RetNullable.fromProblems(
                 RetVal.fromProblem(p1), RetVal.fromProblem(p2)
         );
         assertEquals(List.of(res), this.monitor.getNeverObserved());
@@ -218,7 +222,7 @@ class RetValTest {
         final LocalizedProblem p2 = LocalizedProblem.from("p2");
         final LocalizedProblem p3 = LocalizedProblem.from("p3");
         final LocalizedProblem p4 = LocalizedProblem.from("p4");
-        final RetVal<Object> res = RetVal.fromProblems(
+        final RetNullable<Object> res = RetNullable.fromProblems(
                 RetVal.fromProblem(p1, p2), RetVal.fromProblem(p3, p4)
         );
         assertEquals(List.of(res), this.monitor.getNeverObserved());
@@ -233,7 +237,7 @@ class RetValTest {
     void fromProblems_ProblemContainer_null() {
         try {
             // Again, this shows invalid API usage difficulties.
-            RetVal.fromProblems((ProblemContainer) null);
+            RetNullable.fromProblems((ProblemContainer) null);
             fail("Did not throw IAE");
         } catch (final IllegalArgumentException e) {
             // skip exception inspection
@@ -245,7 +249,7 @@ class RetValTest {
     @Test
     void fromProblems_ProblemContainer_someNull_someOk() {
         final LocalizedProblem problem = LocalizedProblem.from("x");
-        final RetVal<Object> res = RetVal.fromProblems(
+        final RetNullable<Object> res = RetNullable.fromProblems(
                 RetVal.fromProblem(problem), RetVal.ok("x"), null
         );
         assertEquals(List.of(res), this.monitor.getNeverObserved());
@@ -256,7 +260,7 @@ class RetValTest {
     void fromProblems_CollectionProblemContainer_notNull1() {
         final LocalizedProblem p1 = LocalizedProblem.from("p1");
         final LocalizedProblem p2 = LocalizedProblem.from("p2");
-        final RetVal<Object> res = RetVal.fromProblems(List.of(
+        final RetNullable<Object> res = RetNullable.fromProblems(List.of(
                 RetVal.fromProblem(p1),
                 RetVal.fromProblem(p2),
                 RetVal.ok("x"),
@@ -274,7 +278,7 @@ class RetValTest {
     void fromProblems_CollectionProblemContainer_notNull2() {
         final LocalizedProblem p1 = LocalizedProblem.from("p1");
         final LocalizedProblem p2 = LocalizedProblem.from("p2");
-        final RetVal<Object> res = RetVal.fromProblems(
+        final RetNullable<Object> res = RetNullable.fromProblems(
                 List.of(RetVal.fromProblem(p1)),
                 List.of(RetVal.fromProblem(p2))
         );
@@ -291,7 +295,7 @@ class RetValTest {
         final LocalizedProblem p1 = LocalizedProblem.from("p1");
         final LocalizedProblem p2 = LocalizedProblem.from("p2");
         final LocalizedProblem p3 = LocalizedProblem.from("p3");
-        final RetVal<Object> res = RetVal.fromProblems(
+        final RetNullable<Object> res = RetNullable.fromProblems(
                 List.of(RetVal.fromProblem(p1), RetVal.fromProblem(p2, p3)),
                 List.of()
         );
@@ -306,7 +310,7 @@ class RetValTest {
     @Test
     void fromProblems_CollectionProblemContainer_empty() {
         try {
-            RetVal.fromProblems(List.of());
+            RetNullable.fromProblems(List.of());
             fail("Did not throw IAE");
         } catch (final IllegalArgumentException e) {
             // skip exception inspection
@@ -319,7 +323,7 @@ class RetValTest {
     void fromProblems_CollectionProblemContainer_null1() {
         try {
             // Again, api usage difficulty
-            RetVal.fromProblems((Collection<ProblemContainer>) null);
+            RetNullable.fromProblems((Collection<ProblemContainer>) null);
             fail("Did not throw IAE");
         } catch (final IllegalArgumentException e) {
             // skip exception inspection
@@ -332,7 +336,7 @@ class RetValTest {
     void fromProblems_CollectionProblemContainer_null2() {
         try {
             // Again, api usage difficulty
-            RetVal.fromProblems(Arrays.asList(null, null));
+            RetNullable.fromProblems(Arrays.asList(null, null));
             fail("Did not throw IAE");
         } catch (final IllegalArgumentException e) {
             // skip exception inspection
@@ -344,7 +348,7 @@ class RetValTest {
     @Test
     void fromProblems_CollectionProblemContainer_someNull_someEmpty() {
         final LocalizedProblem problem = LocalizedProblem.from("x");
-        final RetVal<Object> res = RetVal.fromProblems(
+        final RetNullable<Object> res = RetNullable.fromProblems(
                 List.of(RetVal.fromProblem(problem)),
                 null, List.of()
         );
@@ -354,35 +358,70 @@ class RetValTest {
 
     @Test
     void getValue_problem() {
-        final RetVal<Object> res = RetVal.fromProblem(LocalizedProblem.from("x"));
+        final RetNullable<Object> res = RetNullable.fromProblem(LocalizedProblem.from("x"));
         assertNull(res.getValue());
         assertEquals(List.of(res), this.monitor.getNeverObserved());
     }
 
     @Test
     void getValue_ok() {
-        final RetVal<String> res = RetVal.ok("a");
+        final RetNullable<String> res = RetNullable.ok("a");
         assertEquals("a", res.getValue());
         assertEquals(List.of(res), this.monitor.getNeverObserved());
     }
 
     @Test
     void asOptional_problem() {
-        final RetVal<Object> res = RetVal.fromProblem(LocalizedProblem.from("x"));
+        final RetNullable<Object> res = RetNullable.fromProblem(LocalizedProblem.from("x"));
         assertTrue(res.asOptional().isEmpty());
         assertEquals(List.of(res), this.monitor.getNeverObserved());
     }
 
     @Test
     void asOptional_ok() {
-        final RetVal<String> res = RetVal.ok("a");
+        final RetNullable<String> res = RetNullable.ok("a");
         assertTrue(res.asOptional().isPresent());
+        assertEquals("a", res.asOptional().get());
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+    }
+
+    @Test
+    void asOptional_ok_null() {
+        final RetNullable<String> res = RetNullable.ok(null);
+        assertTrue(res.asOptional().isEmpty());
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+    }
+
+    @Test
+    void requireOptional_problem() {
+        final RetNullable<Object> res = RetNullable.fromProblem(LocalizedProblem.from("x"));
+        try {
+            res.requireOptional();
+            fail("Did not throw ISE");
+        } catch (final IllegalStateException e) {
+            // don't inspect the exception
+        }
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+    }
+
+    @Test
+    void requireOptional_ok() {
+        final RetNullable<String> res = RetNullable.ok("a");
+        assertTrue(res.requireOptional().isPresent());
+        assertEquals("a", res.asOptional().get());
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+    }
+
+    @Test
+    void requireOptional_ok_null() {
+        final RetNullable<String> res = RetNullable.ok(null);
+        assertTrue(res.requireOptional().isEmpty());
         assertEquals(List.of(res), this.monitor.getNeverObserved());
     }
 
     @Test
     void result_problem() {
-        final RetVal<Object> res = RetVal.fromProblem(LocalizedProblem.from("x"));
+        final RetNullable<Object> res = RetNullable.fromProblem(LocalizedProblem.from("x"));
         try {
             res.result();
             fail("Did not throw ISE");
@@ -397,7 +436,7 @@ class RetValTest {
     @Test
     void result_ok_not_checked() {
         // Test the explicit rules around observability with this call.
-        final RetVal<Long> res = RetVal.ok(Long.MIN_VALUE);
+        final RetNullable<Long> res = RetNullable.ok(Long.MIN_VALUE);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -410,7 +449,7 @@ class RetValTest {
 
     @Test
     void forwardProblems_ok() {
-        final RetVal<String> res = RetVal.ok("a");
+        final RetNullable<String> res = RetNullable.ok("a");
         try {
             res.forwardProblems();
             fail("Did not throw ISE");
@@ -425,11 +464,10 @@ class RetValTest {
         this.monitor.traceEnabled = true;
 
         final LocalizedProblem problem = LocalizedProblem.from("x");
-        final RetVal<String> res = RetVal.fromProblem(problem);
+        final RetNullable<String> res = RetNullable.fromProblem(problem);
         // Notice the implicit API usage check for altering the signature to an incompatible
         // type.
         final RetVal<Integer> forwarded = res.forwardProblems();
-        assertNotSame(res, forwarded);
 
         // the "res" should be marked as checked, and the forwarded one as not.
         // This is due to the usecase of using this "forward" call to cause the
@@ -446,15 +484,14 @@ class RetValTest {
         this.monitor.traceEnabled = false;
 
         final LocalizedProblem problem = LocalizedProblem.from("x");
-        final RetVal<String> res = RetVal.fromProblem(problem);
+        final RetNullable<String> res = RetNullable.fromProblem(problem);
         // Notice the implicit API usage check for altering the signature to an incompatible
         // type.
         final RetVal<Integer> forwarded = res.forwardProblems();
-        assertSame(res, forwarded);
 
         // because both "res" and "forwarded" are the same object, just one
         // of them should be in the never-checked list.
-        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(forwarded), this.monitor.getNeverObserved());
 
         assertEquals(List.of(problem), forwarded.anyProblems());
         assertTrue(forwarded.hasProblems());
@@ -462,7 +499,7 @@ class RetValTest {
 
     @Test
     void forwardNullableProblems_ok() {
-        final RetVal<String> res = RetVal.ok("a");
+        final RetNullable<String> res = RetNullable.ok("a");
         try {
             res.forwardNullableProblems();
             fail("Did not throw ISE");
@@ -473,14 +510,14 @@ class RetValTest {
     }
 
     @Test
-    void forwardNullableProblems_problems() {
+    void forwardNullableProblems_problems_traceEnabled() {
         // Even though the implementation does not have code that checks
         // for the trace-enabled state, it's added here to help ensure future
         // coding does the right thing.
-        this.monitor.traceEnabled = false;
+        this.monitor.traceEnabled = true;
 
         final LocalizedProblem problem = LocalizedProblem.from("x");
-        final RetVal<String> res = RetVal.fromProblem(problem);
+        final RetNullable<String> res = RetNullable.fromProblem(problem);
         // Notice the implicit API usage check for altering the signature to an incompatible
         // type.
         final RetNullable<Integer> forwarded = res.forwardNullableProblems();
@@ -497,8 +534,32 @@ class RetValTest {
     }
 
     @Test
+    void forwardNullableProblems_problems_traceDisabled() {
+        // Even though the implementation does not have code that checks
+        // for the trace-enabled state, it's added here to help ensure future
+        // coding does the right thing.
+        this.monitor.traceEnabled = false;
+
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final RetNullable<String> res = RetNullable.fromProblem(problem);
+        // Notice the implicit API usage check for altering the signature to an incompatible
+        // type.
+        final RetNullable<Integer> forwarded = res.forwardNullableProblems();
+        assertSame(res, forwarded);
+
+        // the "res" should be marked as checked, and the forwarded one as not.
+        // This is due to the usecase of using this "forward" call to cause the
+        // previous value to go out-of-scope and pass the problem management to the
+        // new object.
+        assertEquals(List.of(forwarded), this.monitor.getNeverObserved());
+
+        assertEquals(List.of(problem), forwarded.anyProblems());
+        assertTrue(forwarded.hasProblems());
+    }
+
+    @Test
     void forwardVoidProblems_ok() {
-        final RetVal<String> res = RetVal.ok("a");
+        final RetNullable<String> res = RetNullable.ok("a");
         try {
             res.forwardVoidProblems();
             fail("Did not throw ISE");
@@ -511,7 +572,7 @@ class RetValTest {
     @Test
     void forwardVoidProblems_problems() {
         final LocalizedProblem problem = LocalizedProblem.from("x");
-        final RetVal<String> res = RetVal.fromProblem(problem);
+        final RetNullable<String> res = RetNullable.fromProblem(problem);
         // Notice the implicit API usage check for altering the signature to an incompatible
         // type.
         final RetVoid forwarded = res.forwardVoidProblems();
@@ -528,35 +589,11 @@ class RetValTest {
     }
 
     @Test
-    void asNullable_problem() {
-        final LocalizedProblem problem = LocalizedProblem.from("x");
-        // Note: RetVal<Void> is impossible with a non-problem value.
-        final RetVal<Void> res = RetVal.fromProblem(problem);
-        final RetNullable<Void> val = res.asNullable();
-        // should have passed checking from res to val
-        assertEquals(List.of(val), this.monitor.getNeverObserved());
-
-        assertTrue(val.hasProblems());
-        assertEquals(List.of(problem), val.anyProblems());
-    }
-
-    @Test
-    void asNullable_ok() {
-        final RetVal<String> res = RetVal.ok("a");
-        final RetNullable<String> val = res.asNullable();
-        // should have transferred check ownership to val
-        assertEquals(List.of(val), this.monitor.getNeverObserved());
-
-        assertEquals("a", val.result());
-        assertEquals(List.of(), val.anyProblems());
-    }
-
-    @Test
     void thenValidate_initialProblem() {
         final String[] acceptedValue = {"not set"};
         final LocalizedProblem problem = LocalizedProblem.from("x");
-        final RetVal<String> res = RetVal.fromProblem(problem);
-        final RetVal<String> val = res.thenValidate((v) -> {
+        final RetNullable<String> res = RetNullable.fromProblem(problem);
+        final RetNullable<String> val = res.thenValidate((v) -> {
             throw new IllegalStateException("unreachable code");
         });
 
@@ -575,8 +612,8 @@ class RetValTest {
     void thenValidate_ok_nullOk() {
         final String[] acceptedValue = {"not set"};
         final int[] callCount = {0};
-        final RetVal<String> res = RetVal.ok("value");
-        final RetVal<String> val = res.thenValidate((v) -> {
+        final RetNullable<String> res = RetNullable.ok("value");
+        final RetNullable<String> val = res.thenValidate((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
             return null;
@@ -599,8 +636,8 @@ class RetValTest {
     void thenValidate_ok_emptyOk() {
         final String[] acceptedValue = {"not set"};
         final int[] callCount = {0};
-        final RetVal<String> res = RetVal.ok("value");
-        final RetVal<String> val = res.thenValidate((v) -> {
+        final RetNullable<String> res = RetNullable.ok("value");
+        final RetNullable<String> val = res.thenValidate((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
             return RetVoid.ok();  // non-null and no problems
@@ -624,8 +661,8 @@ class RetValTest {
         final String[] acceptedValue = {"not set"};
         final int[] callCount = {0};
         final LocalizedProblem problem = LocalizedProblem.from("x");
-        final RetVal<String> res = RetVal.ok("value");
-        final RetVal<String> val = res.thenValidate((v) -> {
+        final RetNullable<String> res = RetNullable.ok("value");
+        final RetNullable<String> val = res.thenValidate((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
             return RetVoid.fromProblem(problem);
@@ -645,7 +682,7 @@ class RetValTest {
     void then_ok_ok() {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetVal<Integer> val = res.then((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -666,7 +703,7 @@ class RetValTest {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetVal<Integer> val = res.then((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -683,31 +720,12 @@ class RetValTest {
     }
 
     @Test
-    void then_problem_noTracing() {
-        // With tracing disabled, the same object will be returned when the original
-        // value has a problem.
-        this.monitor.traceEnabled = false;
+    void then_problem() {
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.fromProblem(problem);
+        final RetNullable<Integer> res = RetNullable.fromProblem(problem);
         final RetVal<Integer> val = res.then((v) -> {
             throw new IllegalStateException("unreachable code");
         });
-        assertSame(res, val);
-        assertEquals(List.of(val), this.monitor.getNeverObserved());
-        assertEquals(List.of(problem), val.anyProblems());
-    }
-
-    @Test
-    void then_problem_tracing() {
-        // With tracing enabled, a different object will be returned when the original
-        // value has a problem.
-        this.monitor.traceEnabled = true;
-        final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.fromProblem(problem);
-        final RetVal<Integer> val = res.then((v) -> {
-            throw new IllegalStateException("unreachable code");
-        });
-        assertNotSame(res, val);
         assertEquals(List.of(val), this.monitor.getNeverObserved());
         assertEquals(List.of(problem), val.anyProblems());
     }
@@ -716,7 +734,7 @@ class RetValTest {
     void map_ok() {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetVal<Integer> val = res.map((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -734,14 +752,15 @@ class RetValTest {
 
     @Test
     void map_problem_noTracing() {
-        // With tracing disabled, the same value is returned.
+        // tracing enabled state shouldn't matter, but is explicitly called out for
+        // future development enforcement.
         this.monitor.traceEnabled = false;
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.fromProblem(problem);
+        final RetNullable<Integer> res = RetNullable.fromProblem(problem);
         final RetVal<Integer> val = res.map((v) -> {
             throw new IllegalStateException("unreachable code");
         });
-        assertSame(res, val);
+        assertNotSame(res, val);
         assertEquals(List.of(val), this.monitor.getNeverObserved());
         assertEquals(List.of(problem), val.anyProblems());
     }
@@ -751,7 +770,7 @@ class RetValTest {
         // With tracing enabled, a different value is returned.
         this.monitor.traceEnabled = true;
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.fromProblem(problem);
+        final RetNullable<Integer> res = RetNullable.fromProblem(problem);
         final RetVal<Integer> val = res.map((v) -> {
             throw new IllegalStateException("unreachable code");
         });
@@ -764,7 +783,7 @@ class RetValTest {
     void thenNullable_ok_ok() {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetNullable<Integer> val = res.thenNullable((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -784,7 +803,7 @@ class RetValTest {
     void thenNullable_ok_okNull() {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetNullable<Integer> val = res.thenNullable((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -805,7 +824,7 @@ class RetValTest {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetNullable<Integer> val = res.thenNullable((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -822,12 +841,27 @@ class RetValTest {
     }
 
     @Test
-    void thenNullable_problem() {
+    void thenNullable_problem_tracing() {
+        this.monitor.traceEnabled = true;
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.fromProblem(problem);
+        final RetNullable<Integer> res = RetNullable.fromProblem(problem);
         final RetNullable<Integer> val = res.thenNullable((v) -> {
             throw new IllegalStateException("unreachable code");
         });
+        assertNotSame(res, val);
+        assertEquals(List.of(val), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), val.anyProblems());
+    }
+
+    @Test
+    void thenNullable_problem_noTracing() {
+        this.monitor.traceEnabled = false;
+        final LocalizedProblem problem = LocalizedProblem.from("p");
+        final RetNullable<Integer> res = RetNullable.fromProblem(problem);
+        final RetNullable<Integer> val = res.thenNullable((v) -> {
+            throw new IllegalStateException("unreachable code");
+        });
+        assertSame(res, val);
         assertEquals(List.of(val), this.monitor.getNeverObserved());
         assertEquals(List.of(problem), val.anyProblems());
     }
@@ -836,7 +870,7 @@ class RetValTest {
     void mapNullable_ok() {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetNullable<Integer> val = res.mapNullable((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -856,7 +890,7 @@ class RetValTest {
     void mapNullable_okNull() {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetNullable<Integer> val = res.mapNullable((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -874,7 +908,7 @@ class RetValTest {
     @Test
     void mapNullable_problem() {
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.fromProblem(problem);
+        final RetNullable<Integer> res = RetNullable.fromProblem(problem);
         final RetNullable<Integer> val = res.mapNullable((v) -> {
             throw new IllegalStateException("unreachable code");
         });
@@ -885,8 +919,8 @@ class RetValTest {
     @Test
     void thenRun_runnable_ok() {
         final int[] callCount = {0};
-        final RetVal<String> res = RetVal.ok("x");
-        final RetVal<String> val = res.thenRun(() -> callCount[0]++);
+        final RetNullable<String> res = RetNullable.ok("x");
+        final RetNullable<String> val = res.thenRunNullable(() -> callCount[0]++);
         assertSame(res, val);
         assertEquals(List.of(val), this.monitor.getNeverObserved());
         assertEquals(List.of(), val.anyProblems());
@@ -896,8 +930,8 @@ class RetValTest {
     @Test
     void thenRun_runnable_problem() {
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.fromProblem(problem);
-        final RetVal<Integer> val = res.thenRun(() -> {
+        final RetNullable<Integer> res = RetNullable.fromProblem(problem);
+        final RetNullable<Integer> val = res.thenRunNullable(() -> {
             throw new IllegalStateException("unreachable code");
         });
         assertSame(res, val);
@@ -909,8 +943,8 @@ class RetValTest {
     void thenRun_consumer_ok() {
         final int[] callCount = {0};
         final String[] value = {"not called"};
-        final RetVal<String> res = RetVal.ok("x");
-        final RetVal<String> val = res.thenRun((v) -> {
+        final RetNullable<String> res = RetNullable.ok("x");
+        final RetNullable<String> val = res.thenRunNullable((v) -> {
             value[0] = v;
             callCount[0]++;
         });
@@ -924,8 +958,8 @@ class RetValTest {
     @Test
     void thenRun_consumer_problem() {
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.fromProblem(problem);
-        final RetVal<Integer> val = res.thenRun((v) -> {
+        final RetNullable<Integer> res = RetNullable.fromProblem(problem);
+        final RetNullable<Integer> val = res.thenRunNullable((v) -> {
             throw new IllegalStateException("unreachable code");
         });
         assertSame(res, val);
@@ -937,7 +971,7 @@ class RetValTest {
     void thenVoid_function_ok_ok() {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetVoid val = res.thenVoid((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -957,7 +991,7 @@ class RetValTest {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetVoid val = res.thenVoid((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -976,8 +1010,8 @@ class RetValTest {
     @Test
     void thenVoid_function_problem() {
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.fromProblem(problem);
-        final RetVoid val = res.thenVoid((NonnullFunction<Integer, RetVoid>) (v) -> {
+        final RetNullable<Integer> res = RetNullable.fromProblem(problem);
+        final RetVoid val = res.thenVoid((NonnullReturnFunction<Integer, RetVoid>) (v) -> {
             throw new IllegalStateException("unreachable code");
         });
         assertEquals(List.of(val), this.monitor.getNeverObserved());
@@ -988,7 +1022,7 @@ class RetValTest {
     void thenVoid_consumer_ok() {
         final int[] acceptedValue = {0};
         final int[] callCount = {0};
-        final RetVal<Integer> res = RetVal.ok(3);
+        final RetNullable<Integer> res = RetNullable.ok(3);
         final RetVoid val = res.thenVoid((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
@@ -1005,8 +1039,8 @@ class RetValTest {
     @Test
     void thenVoid_consumer_problem() {
         final LocalizedProblem problem = LocalizedProblem.from("p");
-        final RetVal<Integer> res = RetVal.fromProblem(problem);
-        final RetVoid val = res.thenVoid((NonnullConsumer<Integer>) (v) -> {
+        final RetNullable<Integer> res = RetNullable.fromProblem(problem);
+        final RetVoid val = res.thenVoid((Consumer<Integer>) (v) -> {
             throw new IllegalStateException("unreachable code");
         });
         assertEquals(List.of(val), this.monitor.getNeverObserved());
@@ -1016,7 +1050,7 @@ class RetValTest {
     @Test
     void isOk_ok() {
         // Test the explicit rules around observability with this call.
-        final RetVal<Long> res = RetVal.ok(Long.MAX_VALUE);
+        final RetNullable<Long> res = RetNullable.ok(Long.MAX_VALUE);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -1031,7 +1065,7 @@ class RetValTest {
     void isOk_problem() {
         // Test the explicit rules around observability with this call.
         final LocalizedProblem problem = LocalizedProblem.from("f");
-        final RetVal<Long> res = RetVal.fromProblem(problem);
+        final RetNullable<Long> res = RetNullable.fromProblem(problem);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -1047,7 +1081,7 @@ class RetValTest {
     @Test
     void isProblem_ok() {
         // Test the explicit rules around observability with this call.
-        final RetVal<Long> res = RetVal.ok(Long.MAX_VALUE);
+        final RetNullable<Long> res = RetNullable.ok(Long.MAX_VALUE);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -1062,7 +1096,7 @@ class RetValTest {
     void isProblem_problem() {
         // Test the explicit rules around observability with this call.
         final LocalizedProblem problem = LocalizedProblem.from("f");
-        final RetVal<Long> res = RetVal.fromProblem(problem);
+        final RetNullable<Long> res = RetNullable.fromProblem(problem);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -1076,7 +1110,7 @@ class RetValTest {
     @Test
     void anyProblems_ok() {
         // Test the explicit rules around observability with this call.
-        final RetVal<Long> res = RetVal.ok(Long.MAX_VALUE);
+        final RetNullable<Long> res = RetNullable.ok(Long.MAX_VALUE);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -1091,7 +1125,7 @@ class RetValTest {
     void anyProblems_problem() {
         // Test the explicit rules around observability with this call.
         final LocalizedProblem problem = LocalizedProblem.from("f");
-        final RetVal<Long> res = RetVal.fromProblem(problem);
+        final RetNullable<Long> res = RetNullable.fromProblem(problem);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -1105,7 +1139,7 @@ class RetValTest {
     @Test
     void validProblems_ok() {
         // Test the explicit rules around observability with this call.
-        final RetVal<Long> res = RetVal.ok(Long.MAX_VALUE);
+        final RetNullable<Long> res = RetNullable.ok(Long.MAX_VALUE);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -1125,7 +1159,7 @@ class RetValTest {
     void validProblems_problem() {
         // Test the explicit rules around observability with this call.
         final LocalizedProblem problem = LocalizedProblem.from("f");
-        final RetVal<Long> res = RetVal.fromProblem(problem);
+        final RetNullable<Long> res = RetNullable.fromProblem(problem);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -1139,7 +1173,7 @@ class RetValTest {
     @Test
     void joinProblemsWith_ok() {
         // Test the explicit rules around observability with this call.
-        final RetVal<Long> res = RetVal.ok(Long.MAX_VALUE);
+        final RetNullable<Long> res = RetNullable.ok(Long.MAX_VALUE);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -1157,7 +1191,7 @@ class RetValTest {
     void joinProblemsWith_problem() {
         // Test the explicit rules around observability with this call.
         final LocalizedProblem problem = LocalizedProblem.from("f");
-        final RetVal<Long> res = RetVal.fromProblem(problem);
+        final RetNullable<Long> res = RetNullable.fromProblem(problem);
         // Ensure it is not observed right after creation...
         assertEquals(List.of(res), this.monitor.getNeverObserved());
 
@@ -1175,7 +1209,7 @@ class RetValTest {
     void debugProblems_empty() {
         assertEquals(
                 "",
-                RetVal.ok("x").debugProblems(";")
+                RetNullable.ok("x").debugProblems(";")
         );
     }
 
@@ -1183,7 +1217,7 @@ class RetValTest {
     void debugProblems_one() {
         assertEquals(
                 "a",
-                RetVal.fromProblem(LocalizedProblem.from("a"))
+                RetNullable.fromProblem(LocalizedProblem.from("a"))
                         .debugProblems(";")
         );
     }
@@ -1192,7 +1226,7 @@ class RetValTest {
     void debugProblems_two() {
         assertEquals(
                 "a;bb",
-                RetVal.fromProblem(
+                RetNullable.fromProblem(
                         LocalizedProblem.from("a"),
                         LocalizedProblem.from("bb")
                 )
@@ -1203,16 +1237,16 @@ class RetValTest {
     @Test
     void toString_ok() {
         assertEquals(
-                "RetVal(value: x)",
-                RetVal.ok("x").toString()
+                "RetNullable(value: x)",
+                RetNullable.ok("x").toString()
         );
     }
 
     @Test
     void toString_problems() {
         assertEquals(
-                "RetVal(2 problems: abc; def)",
-                RetVal.fromProblem(
+                "RetNullable(2 problems: abc; def)",
+                RetNullable.fromProblem(
                         LocalizedProblem.from("abc"),
                         LocalizedProblem.from("def")
                 ).toString()
