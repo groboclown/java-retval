@@ -1,9 +1,11 @@
 // Released under the MIT License.
 package net.groboclown.retval;
 
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -587,6 +589,71 @@ public class RetVal<T> implements ProblemContainer {
         // checking on to it.
         this.listener.onObserved();
         return supplier.get();
+    }
+
+    /**
+     * Combines the supplier's value with this value, where the {@link Map.Entry#getKey()}
+     * references this object's value, and {@link Map.Entry#getValue()} references the
+     * supplier's value.  If either this object or the returned supplier's object has any problem,
+     * the returned value will have problems combined with both.
+     *
+     * <p>Note that, unlike the "then" and "map" method varieties, this will run the supplier
+     * regardless of the current problem state.
+     *
+     * @param supplier function object to invoke
+     * @return the combined problem state, or the current value.
+     */
+    public <V> RetVal<AbstractMap.SimpleImmutableEntry<T, V>> with(
+            @Nonnull final NonnullSupplier<RetVal<V>> supplier
+    ) {
+        // Always call the supplier first.
+        final RetVal<V> res = supplier.get();
+        if (res.isOk()) {
+            if (this.problems.isEmpty()) {
+                // Pass the observation state to the returned value.
+                this.listener.onObserved();
+                return RetVal.ok(new AbstractMap.SimpleImmutableEntry<>(this.value, res.result()));
+            }
+            // The current value has an error, but the caller doesn't.
+            // Ensure we mark the res value as observed.
+            res.result();
+            // And save a bit of memory by returning this object, because the value is
+            // still going to be null.
+            @SuppressWarnings("unchecked")
+            final RetVal<AbstractMap.SimpleImmutableEntry<T, V>> obj =
+                    (RetVal<AbstractMap.SimpleImmutableEntry<T, V>>) this;
+            return obj;
+        }
+        // Return a combination of problem states.  In this case, the observation
+        // state must be passed to the returned value.
+        this.listener.onObserved();
+        return RetVal.fromProblem(Ret.joinRetProblems(this, res));
+    }
+
+    /**
+     * Combines the problem state of this object along with the problem state of the object
+     * returned by the supplier.  If neither objects has any problems, then the current value is
+     * returned.  Otherwise, a value with the combined problems is returned.
+     *
+     * <p>Note that, unlike the "then" and "map" method varieties, this will run the supplier
+     * regardless of the current problem state.
+     *
+     * @param supplier function object to invoke
+     * @return the combined problem state, or the current value.
+     */
+    @Nonnull
+    public RetVal<T> withVoid(@Nonnull final NonnullSupplier<RetVoid> supplier) {
+        // Always call the supplier first.
+        final RetVoid res = supplier.get();
+        if (res.isOk()) {
+            // Note that this performed an observation on the supplier.
+            // Return the current value, as its problem/value state is what's expected.
+            return this;
+        }
+        // Return a combination of problem states.  In this case, the observation
+        // state must be passed to the returned value.
+        this.listener.onObserved();
+        return RetVal.fromProblem(Ret.joinRetProblems(this, res));
     }
 
     @Override

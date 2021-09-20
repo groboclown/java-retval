@@ -51,17 +51,17 @@ public class RetVoid implements ProblemContainer {
      * Constructs a {@link RetVoid} instance with the collections of problems.
      * This is optimized to reduce the memory load where easy.
      *
-     * @param problemSets problems that should be included in this object.
+     * @param problemSet first collection of problems
+     * @param problemSets vararg optional problems that should be included in this object.
      * @return a RetVoid with all the given problems.
      */
     @SafeVarargs
     @Nonnull
-    public static RetVoid fromProblem(@Nonnull final Collection<Problem>... problemSets) {
-        // Simple, easy check.
-        if (problemSets.length <= 0) {
-            return ok();
-        }
-        final List<Problem> all = Ret.joinProblemSets(List.of(), problemSets);
+    public static RetVoid fromProblem(
+            @Nonnull final Collection<Problem> problemSet,
+            @Nonnull final Collection<Problem>... problemSets
+    ) {
+        final List<Problem> all = Ret.joinProblemSets(problemSet, problemSets);
         if (all.isEmpty()) {
             return ok();
         }
@@ -73,16 +73,19 @@ public class RetVoid implements ProblemContainer {
      * no problem in any of the arguments, then this will return a no-problem
      * value.
      *
-     * @param problems a list of problems.
+     * @param problem initial problem
+     * @param problems vararg optional list of problems.
      * @return a new void instance, possibly without problems.
      */
     @Nonnull
-    public static RetVoid fromProblem(final Problem... problems) {
-        // Simple, easy check.
-        if (problems.length <= 0) {
+    public static RetVoid fromProblem(
+            @Nullable final Problem problem,
+            final Problem... problems) {
+        final List<Problem> all = Ret.joinProblems(problem, problems);
+        if (all.isEmpty()) {
             return ok();
         }
-        return new RetVoid(List.of(problems));
+        return new RetVoid(all);
     }
 
     /**
@@ -145,15 +148,19 @@ public class RetVoid implements ProblemContainer {
     }
 
     @Override
-    public boolean isProblem() {
-        this.listener.onObserved();
-        return ! this.problems.isEmpty();
+    public boolean hasProblems() {
+        // This acts as a check only if there is no problem, because there is
+        // no value the developer needs to extract.
+        if (this.problems.isEmpty()) {
+            this.listener.onObserved();
+            return false;
+        }
+        return true;
     }
 
     @Override
-    public boolean hasProblems() {
-        this.listener.onObserved();
-        return ! this.problems.isEmpty();
+    public boolean isProblem() {
+        return hasProblems();
     }
 
     @Override
@@ -178,6 +185,7 @@ public class RetVoid implements ProblemContainer {
     @Nonnull
     @Override
     public Collection<Problem> validProblems() {
+        // Put the observation check first.  Extraction counts as an observation.
         this.listener.onObserved();
         return Ret.enforceHasProblems(this.problems);
     }
@@ -339,11 +347,20 @@ public class RetVoid implements ProblemContainer {
         return withWrapper(supplier, RetVal::new);
     }
 
-    @Nonnull
-    public <R> RetVal<R> withValue(@Nonnull final NonnullSupplier<R> supplier) {
-        return withWrapper(() -> RetVal.ok(supplier.get()), RetVal::new);
-    }
 
+    /**
+     * Runs the supplier regardless of the current object's error state.  If the supplier
+     * returns an error, or if the current object has an error, then the errors are combined.
+     * Only if the current object has no error and the supplier returns no error does the
+     * returned object have a value.  If the current object has an error and the supplier
+     * returns a value, the value is lost.
+     *
+     * @param supplier functional object that returns a RetVal.  Always called.
+     * @param <R> type of the returned value.
+     * @return a RetVal with the combined errors of the current object and the supplier.  In the
+     *     case where both objects have no errors, the returned object will contain the value of
+     *     the supplier.
+     */
     @Nonnull
     public <R> RetNullable<R> withNullable(
             @Nonnull final NonnullSupplier<RetNullable<R>> supplier
@@ -351,12 +368,15 @@ public class RetVoid implements ProblemContainer {
         return withWrapper(supplier, RetNullable::new);
     }
 
-    @Nonnull
-    public <R> RetNullable<R> withNullableValue(@Nonnull final Supplier<R> supplier) {
-        return withWrapper(() -> RetNullable.ok(supplier.get()), RetNullable::new);
-    }
 
-    @Nonnull
+    /**
+     * Runs the supplier regardless of the current object's problem state.  The returned
+     * object combines the problem states of the supplier's returned object and this object's
+     * problem state.
+     *
+     * @param supplier functional object that returns a RetVoid.  Always called.
+     * @return a RetVoid joined with the two states.
+     */    @Nonnull
     public RetVoid withVoid(@Nonnull final NonnullSupplier<RetVoid> supplier) {
         return withWrapper(supplier, RetVoid::new);
     }
@@ -380,6 +400,8 @@ public class RetVoid implements ProblemContainer {
             // super memory efficient version
             return errorFactory.apply(this.problems);
         }
+        // Problem containers return a read-only list of problems, but the source
+        // doesn't have to return a copy, and it can change that list.
         if (hasProblems() || value.hasProblems()) {
             // joinRetProblems returns an immutable list.
             return errorFactory.apply(Ret.joinRetProblems(this, value));
