@@ -21,6 +21,7 @@ public interface NonnullThrowsFunction<T, R> {
      *
      * @param value non-null parameter
      * @return non-null value
+     * @throws Exception any exception type
      */
     @Nonnull
     R apply(@Nonnull T value) throws Exception;

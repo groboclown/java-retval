@@ -109,8 +109,8 @@ public class ConfigurationReader {
         final UserBuilder builder = new UserBuilder();
         builder.setUser(userId);
         return Ret.collectProblems()
-            .withValue(loadRealNameFor(userId), builder::setRealName)
-            .withValue(loadEmailFor(userId), builder::setEmail)
+            .with(loadRealNameFor(userId), builder::setRealName)
+            .with(loadEmailFor(userId), builder::setEmail)
             .complete(builder);
     }
 

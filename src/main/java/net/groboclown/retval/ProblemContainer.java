@@ -8,6 +8,11 @@ import javax.annotation.Nonnull;
  * An object that contains problems.
  *
  * <p>Some implementations may be immutable, while others aren't.
+ *
+ * <p>The API intentionally does not accept a generic problem container in
+ * many parts of the code as a way to push problems into other objects.  Due to
+ * the checking mechanisms, care must be taken that values are not incorrectly
+ * lost.
  */
 public interface ProblemContainer {
     /**

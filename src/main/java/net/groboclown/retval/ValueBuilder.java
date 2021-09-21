@@ -91,7 +91,7 @@ public class ValueBuilder<T> implements ProblemContainer {
     public <V> ValueBuilder<T> with(
             @Nonnull final RetVal<V> arg,
             @Nonnull final NonnullBiConsumer<T, V> consumer) {
-        this.problems.with(arg);
+        this.problems.withProblems(arg.anyProblems());
         if (arg.isOk()) {
             consumer.accept(this.value, arg.result());
         }
@@ -115,7 +115,7 @@ public class ValueBuilder<T> implements ProblemContainer {
     public <V> ValueBuilder<T> with(
             @Nonnull final RetNullable<V> arg,
             @Nonnull final NonnullFirstBiConsumer<T, V> consumer) {
-        this.problems.with(arg);
+        this.problems.withProblems(arg.anyProblems());
         if (arg.isOk()) {
             consumer.accept(this.value, arg.result());
         }
@@ -134,7 +134,7 @@ public class ValueBuilder<T> implements ProblemContainer {
      */
     @Nonnull
     public ValueBuilder<T> with(@Nonnull final RetVoid problems) {
-        this.problems.with(problems);
+        this.problems.withProblems(problems.anyProblems());
         return this;
     }
 

@@ -26,22 +26,68 @@ public class ProblemCollector implements ProblemContainer {
         // Use static constructors.
     }
 
+    /**
+     * Create an empty problem collector.
+     *
+     * @return an empty problem collector.
+     */
     @Nonnull
     public static ProblemCollector from() {
         return new ProblemCollector();
     }
 
 
+    /**
+     * Populate this collector from lists of problems.
+     *
+     * @param problems list of problems.
+     * @param problemLists vararg optional lists of problems.
+     * @return a problem collector containing all the problems.
+     */
+    @SafeVarargs
     @Nonnull
     public static ProblemCollector from(
-            @Nonnull final ProblemContainer container,
-            @Nonnull final ProblemContainer... containers
+            @Nonnull final List<Problem> problems,
+            @Nonnull final List<Problem>... problemLists
     ) {
-        return new ProblemCollector().with(container, containers);
+        return new ProblemCollector().withProblems(problems, problemLists);
+    }
+
+
+    /**
+     * Populate this collector from problems.
+     *
+     * @param problem problem.
+     * @param problems vararg optional problems.
+     * @return a problem collector containing all the problems.
+     */
+    @Nonnull
+    public static ProblemCollector from(
+            @Nonnull final Problem problem,
+            @Nonnull final Problem... problems
+    ) {
+        return new ProblemCollector().withProblem(problem, problems);
     }
 
     /**
-     * Create a new RetCollector and invoke {@link #withValue(RetVal, NonnullConsumer)}.
+     * Create a new RetCollector and invoke {@link #with(RetVal, NonnullConsumer)}.
+     *
+     * @param value problems to include in the collection.
+     * @param values vararg optional additional values.
+     * @return a new collector
+     */
+    @Nonnull
+    public static ProblemCollector from(
+            @Nonnull final RetVoid value,
+            final RetVoid... values
+    ) {
+        return new ProblemCollector().withProblems(
+                Ret.joinRetProblems(value, values)
+        );
+    }
+
+    /**
+     * Create a new RetCollector and invoke {@link #with(RetVal, NonnullConsumer)}.
      *
      * @param value value to pass to the setter, or problems to include in the collection.
      * @param setter passed the value.
@@ -49,15 +95,15 @@ public class ProblemCollector implements ProblemContainer {
      * @return a new collector
      */
     @Nonnull
-    public static <T> ProblemCollector fromValue(
+    public static <T> ProblemCollector from(
             @Nonnull final RetVal<T> value,
             @Nonnull final NonnullConsumer<T> setter
     ) {
-        return new ProblemCollector().withValue(value, setter);
+        return new ProblemCollector().with(value, setter);
     }
 
     /**
-     * Create a new RetCollector and invoke {@link #withValue(RetNullable, Consumer)}.
+     * Create a new RetCollector and invoke {@link #with(RetNullable, Consumer)}.
      *
      * @param value value to pass to the setter, or problems to include in the collection.
      * @param setter passed the value.
@@ -65,11 +111,11 @@ public class ProblemCollector implements ProblemContainer {
      * @return a new collector
      */
     @Nonnull
-    public static <T> ProblemCollector fromValue(
+    public static <T> ProblemCollector from(
             @Nonnull final RetNullable<T> value,
             @Nonnull final Consumer<T> setter
     ) {
-        return new ProblemCollector().withValue(value, setter);
+        return new ProblemCollector().with(value, setter);
     }
 
     /**
@@ -80,25 +126,10 @@ public class ProblemCollector implements ProblemContainer {
      * @return this instance
      */
     @Nonnull
-    public ProblemCollector with(
+    public ProblemCollector withProblem(
             @Nonnull final Problem problem,
             @Nonnull final Problem... problems) {
         this.problems.addAll(Ret.joinProblems(problem, problems));
-        return this;
-    }
-
-    /**
-     * Adds all the problems in the argument into this collector.
-     *
-     * @param container problem container
-     * @param containers optional additional problem containers.
-     * @return this instance
-     */
-    @Nonnull
-    public ProblemCollector with(
-            @Nonnull final ProblemContainer container,
-            @Nonnull final ProblemContainer... containers) {
-        this.problems.addAll(Ret.joinRetProblems(container, containers));
         return this;
     }
 
@@ -111,26 +142,10 @@ public class ProblemCollector implements ProblemContainer {
      */
     @SafeVarargs
     @Nonnull
-    public final ProblemCollector withProblemSets(
+    public final ProblemCollector withProblems(
             @Nonnull final Collection<Problem> problems,
             @Nonnull final Collection<Problem>... problemList) {
         this.problems.addAll(Ret.joinProblemSets(problems, problemList));
-        return this;
-    }
-
-    /**
-     * Adds all the problems in the argument into this collector.
-     *
-     * @param containerSet problem containers
-     * @param containerSets optional additional problem containers.
-     * @return this instance
-     */
-    @SafeVarargs
-    @Nonnull
-    public final ProblemCollector withRetSets(
-            @Nonnull final Collection<ProblemContainer> containerSet,
-            @Nonnull final Collection<ProblemContainer>... containerSets) {
-        this.problems.addAll(Ret.joinRetProblemSets(containerSet, containerSets));
         return this;
     }
 
@@ -144,7 +159,7 @@ public class ProblemCollector implements ProblemContainer {
      * @return this collector
      */
     @Nonnull
-    public <T> ProblemCollector withValue(
+    public <T> ProblemCollector with(
             @Nonnull final RetVal<T> value,
             @Nonnull final NonnullConsumer<T> setter
     ) {
@@ -167,7 +182,7 @@ public class ProblemCollector implements ProblemContainer {
      * @return this collector
      */
     @Nonnull
-    public <T> ProblemCollector withValue(
+    public <T> ProblemCollector with(
             @Nonnull final RetNullable<T> value,
             @Nonnull final Consumer<T> setter
     ) {
@@ -191,6 +206,7 @@ public class ProblemCollector implements ProblemContainer {
      * @param values collection of values to call into the validation function.  This will be
      *               done for each item, irrespective of the active problem state.
      * @param validateFunc function called for each entry to validate.
+     * @param <T> collection value type
      * @return this instance.
      */
     @Nonnull
@@ -248,7 +264,9 @@ public class ProblemCollector implements ProblemContainer {
      * @return the nullable value or problems
      */
     @Nonnull
-    public <T> RetNullable<T> thenNullable(@Nonnull final NonnullSupplier<RetNullable<T>> getter) {
+    public <T> RetNullable<T> thenNullable(
+            @Nonnull final NonnullSupplier<RetNullable<T>> getter
+    ) {
         if (this.problems.isEmpty()) {
             return getter.get();
         }
