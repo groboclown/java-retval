@@ -10,15 +10,6 @@ You can contribute by writing up bugs, writing documentation, or helping out wit
 To develop the library, you'll need to fork the repository and submit changes back to the main project.  All changes you make will need to first have a good build.
 
 
-#### What's Left To Implement
-
-* Fill in the remaining placeholder functions.
-* Add in JavaDoc everywhere.  This is partially done.
-* Get up to 100% code coverage in tests.
-* API must be closer examined to ensure proper use cases for each top-level class and method.
-* Move the development guide to the github.io page off of the readme file frontmatter.
-
-
 #### Code Style Guide
 
 The library uses a style check based off of the Google standard.  There are more local variations that, though they conform to the standard, don't look like normal code.
@@ -40,8 +31,8 @@ For the person performing the release:
 2. Prepare documentation:
    1. Ensure the the [CHANGES.md]() file contains all appropriate updates.
    2. Run `./gradlew javadoc` and put the generated documentation into the [docs]() directory, under a sub-directory named after the version to release (`mkdir docs/2.2.3 && cp -R build/docs/javadoc/* docs/2.2.3/.`).
-   3. Update the [docs/index.md]() file with the new version.
-   4. Add, commit, and push.
+   3. Update the [docs/index.md]() file with the new version - the "importing into your project" guide and adding a new link in the JavaDoc list.
+   5. Add, commit, and push.
 3. Merge the `dev` branch into `main`, then commit and push.  Make sure GitHub activity builds are good.
 4. Locally run the build out of the `main` branch (`./gradlew clean build`).  *TODO setup the activity to publish the jar*
 5. Publish the jar as a Github release artifact.
