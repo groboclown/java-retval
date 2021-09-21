@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import net.groboclown.retval.ProblemContainer;
 
 /**
  * A mock check monitor, suitable for testing.  Note that if used in a non-test environment,
@@ -52,15 +51,15 @@ public abstract class MockObservedMonitor<T> extends ObservedMonitor<T> {
      * Finds the registered closeable instance for the object.  If not returned, then it was never
      * registered.
      *
-     * @param closeable source object
+     * @param value source object
      * @return registered closeable object, or null if never registered.
      */
     @Nullable
-    public Registered<T> findRegistered(@Nonnull final T closeable) {
+    public Registered<T> findRegistered(@Nonnull final T value) {
         synchronized (this.observables) {
             for (final Registered<T> reg : this.observables) {
                 // Note "==" - this is intentional
-                if (reg.getObservable() == closeable) {
+                if (reg.getObservable() == value) {
                     return reg;
                 }
             }

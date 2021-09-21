@@ -7,6 +7,10 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.WillClose;
+import net.groboclown.retval.function.NonnullFunction;
+import net.groboclown.retval.function.NonnullThrowsFunction;
+import net.groboclown.retval.problems.UnhandledExceptionProblem;
 
 
 /**
@@ -234,5 +238,122 @@ public class Ret {
         // Memory inefficient, but faster.
         // The general usage of this method keeps the return value around for short times.
         return ret.toString();
+    }
+
+
+    /**
+     * Runs a function with a closable value.  When the function completes execution,
+     * the closable value is closed.  If either the function or the close action causes an
+     * exception, that is wrapped in a problem and returned.  Note that a problem is
+     * returned for any kind of exception, not just expected ones; if the function is expected
+     * to throw an IOException, but a NullPointerException is thrown, that is still returned
+     * as a problem.
+     *
+     * @param value value passed to the function.  This will be closed
+     *              after the function is called.
+     * @param func function to run
+     * @param <T> type of the value passed to the function
+     * @param <R> return type
+     * @return the function's return value, or the exception wrapped in a problem.
+     */
+    @WillClose
+    @Nonnull
+    public static <T extends AutoCloseable, R> RetVal<R> closeWith(
+            @Nonnull final T value,
+            @Nonnull final NonnullThrowsFunction<T, RetVal<R>> func
+    ) {
+        return closeWithWrapped(value, func, RetVal::fromProblem);
+    }
+
+
+    /**
+     * Runs a function with a closable value.  When the function completes execution,
+     * the closable value is closed.  If either the function or the close action causes an
+     * exception, that is wrapped in a problem and returned.  Note that a problem is
+     * returned for any kind of exception, not just expected ones; if the function is expected
+     * to throw an IOException, but a NullPointerException is thrown, that is still returned
+     * as a problem.
+     *
+     * @param value value passed to the function.  This will be closed
+     *              after the function is called.
+     * @param func function to run
+     * @param <T> type of the value passed to the function
+     * @param <R> return type
+     * @return the function's return value, or the exception wrapped in a problem.
+     */
+    @WillClose
+    @Nonnull
+    public static <T extends AutoCloseable, R> RetNullable<R> closeWithNullable(
+            @Nonnull final T value,
+            @Nonnull final NonnullThrowsFunction<T, RetNullable<R>> func
+    ) {
+        return closeWithWrapped(value, func, RetNullable::fromProblem);
+    }
+
+
+    /**
+     * Runs a function with a closable value.  When the function completes execution,
+     * the closable value is closed.  If either the function or the close action causes an
+     * exception, that is wrapped in a problem and returned.  Note that a problem is
+     * returned for any kind of exception, not just expected ones; if the function is expected
+     * to throw an IOException, but a NullPointerException is thrown, that is still returned
+     * as a problem.
+     *
+     * @param value value passed to the function.  This will be closed
+     *              after the function is called.
+     * @param func function to run
+     * @param <T> type of the value passed to the function
+     * @return the function's return value, or the exception wrapped in a problem.
+     */
+    @WillClose
+    @Nonnull
+    public static <T extends AutoCloseable> RetVoid closeWithVoid(
+            @Nonnull final T value,
+            @Nonnull final NonnullThrowsFunction<T, RetVoid> func
+    ) {
+        return closeWithWrapped(value, func, RetVoid::fromProblem);
+    }
+
+
+    @WillClose
+    @Nonnull
+    private static <T extends AutoCloseable, R extends ProblemContainer> R closeWithWrapped(
+            @Nonnull final T value,
+            @Nonnull final NonnullThrowsFunction<T, R> func,
+            @Nonnull final NonnullFunction<List<Problem>, R> problemFactory
+    ) {
+        final R ret;
+        try {
+            ret = func.apply(value);
+        } catch (final ThreadDeath | VirtualMachineError err) {
+            // never ever process these.
+            throw err;
+        } catch (final Throwable e) {
+            try {
+                value.close();
+            } catch (final ThreadDeath | VirtualMachineError err) {
+                // never ever process these.
+                throw err;
+            } catch (final Throwable suppressed) {
+                e.addSuppressed(suppressed);
+            }
+            return problemFactory.apply(List.of(UnhandledExceptionProblem.wrap(e)));
+        }
+
+        try {
+            value.close();
+        } catch (final ThreadDeath | VirtualMachineError err) {
+            // never ever process these.
+            throw err;
+        } catch (final Throwable e) {
+            // The ret value must pass its observation on to
+            // the return object.  This means it must be
+            // observed, even if it's okay.
+            ret.isOk();
+            return problemFactory.apply(joinProblemSets(
+                    ret.anyProblems(),
+                    List.of(UnhandledExceptionProblem.wrap(e))));
+        }
+        return ret;
     }
 }

@@ -2,6 +2,7 @@
 
 package net.groboclown.retval;
 
+import java.util.ArrayList;
 import java.util.List;
 import net.groboclown.retval.monitor.MockProblemMonitor;
 import net.groboclown.retval.problems.LocalizedProblem;
@@ -234,6 +235,54 @@ class RetVoidTest {
         assertEquals(List.of(orig), this.monitor.getNeverObserved());
         // indeed, the values are the same.
         assertSame(orig, ret);
+    }
+
+    @Test
+    void thenRun_ok() {
+        final RetVoid orig = RetVoid.ok();
+        assertEquals(List.of(orig), this.monitor.getNeverObserved());
+        final int[] callCount = {0};
+        final RetVoid ret = orig.thenRun(() -> {
+            callCount[0]++;
+        });
+        // observation passes to the ret value.
+        assertEquals(List.of(ret), this.monitor.getNeverObserved());
+        assertSame(orig, ret);
+        assertEquals(1, callCount[0]);
+    }
+
+    @Test
+    void thenRun_problem() {
+        final RetVoid orig = RetVoid.fromProblem(LocalizedProblem.from("x"));
+        assertEquals(List.of(orig), this.monitor.getNeverObserved());
+        final RetVoid ret = orig.thenRun(() -> {
+            throw new IllegalStateException("should never be called");
+        });
+        // observation state stays with the original value
+        assertEquals(List.of(orig), this.monitor.getNeverObserved());
+        // indeed, the values are the same.
+        assertSame(orig, ret);
+    }
+
+    @Test
+    void joinProblemsWith_ok() {
+        final RetVoid res = RetVoid.ok();
+        final List<Problem> joined = new ArrayList<>();
+        res.joinProblemsWith(joined);
+        // join problems acts as an observation
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(), joined);
+    }
+
+    @Test
+    void joinProblemsWith_1problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("p1");
+        final RetVoid res = RetVoid.fromProblem(problem);
+        final List<Problem> joined = new ArrayList<>();
+        res.joinProblemsWith(joined);
+        // join problems acts as an observation
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), joined);
     }
 
     @Test

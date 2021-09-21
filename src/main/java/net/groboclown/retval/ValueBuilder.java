@@ -41,18 +41,34 @@ public class ValueBuilder<T> implements ProblemContainer {
     }
 
 
+    /**
+     * Get the value stored in this builder.
+     *
+     * @return the stored value.
+     */
     @Nonnull
     public T getValue() {
         return this.value;
     }
 
 
+    /**
+     * Convert this builder into a {@link RetVal}; if any problems exist, then the
+     * returned object will have those problems, otherwise it will contain the value.
+     *
+     * @return the value or problems.
+     */
     @Nonnull
     public RetVal<T> then() {
         return this.problems.complete(this.value);
     }
 
 
+    /**
+     * Create a warning version of this builder.
+     *
+     * @return the value + all problems
+     */
     @Nonnull
     public WarningVal<T> asWarning() {
         return this.problems.asWarning(this.value);
@@ -149,6 +165,11 @@ public class ValueBuilder<T> implements ProblemContainer {
         return this;
     }
 
+    /**
+     * Get the underlying problem collector.  This contains all the problems discovered so far.
+     *
+     * @return the problem collector.
+     */
     @Nonnull
     public ProblemCollector getCollector() {
         return this.problems;

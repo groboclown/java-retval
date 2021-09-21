@@ -16,6 +16,10 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class WarningVal<T> implements ProblemContainer {
     // Because these are warnings, the problems do not need to be checked.
+    // The general use case as not warnings has the value picked at for valid
+    // data even if there are problems.  In this case, observability on the
+    // value is not valid; there's a possibility that the problem state should
+    // be inspected.
 
     private final List<Problem> problems;
     private final T value;
@@ -26,11 +30,26 @@ public class WarningVal<T> implements ProblemContainer {
         this.problems = problems;
     }
 
+    /**
+     * Create the warning from a value with no problems.
+     *
+     * @param value value to store in the warning instance.
+     * @param <T> value type
+     * @return the warning
+     */
     @Nonnull
     public static <T> WarningVal<T> from(@Nonnull final T value) {
         return new WarningVal<>(value, Collections.emptyList());
     }
 
+    /**
+     * Create a warning value with a collection (possibly empty) of problems.
+     *
+     * @param value value to store in the warning instance.
+     * @param problems collection of problems associated with the warning object.
+     * @param <T> value type
+     * @return the warning
+     */
     @Nonnull
     public static <T> WarningVal<T> from(
             @Nonnull final T value,
@@ -40,6 +59,11 @@ public class WarningVal<T> implements ProblemContainer {
     }
 
 
+    /**
+     * Get the underlying value object.
+     *
+     * @return the value
+     */
     @Nonnull
     public T getValue() {
         return this.value;
@@ -70,8 +94,7 @@ public class WarningVal<T> implements ProblemContainer {
     @Nonnull
     @Override
     public Collection<Problem> validProblems() {
-        Ret.enforceHasProblems(this.problems);
-        return this.problems;
+        return Ret.enforceHasProblems(this.problems);
     }
 
     @Nonnull

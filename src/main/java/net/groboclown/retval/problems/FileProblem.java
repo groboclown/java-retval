@@ -53,11 +53,7 @@ public class FileProblem implements SourcedProblem {
     public static FileProblem from(@Nonnull final String source, @Nonnull final IOException ex) {
         return new FileProblem(
                 source,
-                ex.getLocalizedMessage() == null
-                        ? (ex.getMessage() == null
-                        ? (source + " caused an error")
-                        : ex.getMessage())
-                        : ex.getLocalizedMessage()
+                UnhandledExceptionProblem.exceptionText(ex, source + " caused a problem")
         );
     }
 
@@ -76,5 +72,10 @@ public class FileProblem implements SourcedProblem {
     @Override
     public String getSource() {
         return this.filePath;
+    }
+
+    @Override
+    public String toString() {
+        return getSource() + ": " + localMessage();
     }
 }

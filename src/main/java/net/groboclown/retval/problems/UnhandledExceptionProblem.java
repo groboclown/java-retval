@@ -14,7 +14,7 @@ public class UnhandledExceptionProblem implements Problem {
     private final Throwable source;
 
     /**
-     * Create an {@link UnhandledExceptionProblem}.from an exception.
+     * Create an {@link UnhandledExceptionProblem} from an exception.
      *
      * @param source source exception.
      * @return the exception wrapped in a problem.
@@ -31,15 +31,14 @@ public class UnhandledExceptionProblem implements Problem {
     @Nonnull
     @Override
     public String localMessage() {
-        return this.source.getLocalizedMessage() == null
-                ? (
-                    this.source.getMessage() == null
-                    ? this.source.getClass().getName()
-                    : this.source.getMessage()
-                )
-                : this.source.getLocalizedMessage();
+        return exceptionText(this.source, this.source.getClass().getName());
     }
 
+    /**
+     * Get the exception that caused this problem.
+     *
+     * @return source exception
+     */
     @Nonnull
     public Throwable getSourceException() {
         return this.source;
@@ -48,5 +47,16 @@ public class UnhandledExceptionProblem implements Problem {
     @Override
     public String toString() {
         return localMessage();
+    }
+
+    @Nonnull
+    static String exceptionText(@Nonnull final Throwable ex, @Nonnull final String defaultText) {
+        return ex.getLocalizedMessage() == null
+                ? (
+                    ex.getMessage() == null
+                    ? defaultText
+                    : ex.getMessage()
+                )
+                : ex.getLocalizedMessage();
     }
 }

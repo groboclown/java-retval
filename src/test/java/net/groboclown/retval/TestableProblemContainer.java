@@ -2,18 +2,18 @@
 package net.groboclown.retval;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nonnull;
 
-// A container that can contain null values.
-class TestableProblemContainer implements ProblemContainer {
+/** A container that can contain null problems. */
+public class TestableProblemContainer implements ProblemContainer {
     private final List<Problem> problems;
     private final int problemCount;
 
-    TestableProblemContainer(final Problem... problems) {
+    /** Constructor with 0 or more, possibly null, values. */
+    public TestableProblemContainer(final Problem... problems) {
         final List<Problem> probs = new ArrayList<>();
         int count = 0;
         for (final Problem problem : problems) {
@@ -69,5 +69,25 @@ class TestableProblemContainer implements ProblemContainer {
                 problemList.add(problem);
             }
         }
+    }
+
+    // For test compatibility
+    @Override
+    public boolean equals(final Object other) {
+        if (other == null) {
+            return false;
+        }
+        if (other == this) {
+            return true;
+        }
+        if (other.getClass().equals(TestableProblemContainer.class)) {
+            return this.problems.equals(((TestableProblemContainer) other).problems);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return this.problems.hashCode();
     }
 }

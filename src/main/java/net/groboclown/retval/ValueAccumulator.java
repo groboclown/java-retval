@@ -4,6 +4,7 @@ package net.groboclown.retval;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nonnull;
 import net.groboclown.retval.function.NonnullReturnFunction;
@@ -25,6 +26,7 @@ public class ValueAccumulator<T> implements ProblemContainer {
      * @param <T> value type
      * @return new instance.
      */
+    @Nonnull
     public static <T> ValueAccumulator<T> from() {
         return new ValueAccumulator<>();
     }
@@ -36,6 +38,7 @@ public class ValueAccumulator<T> implements ProblemContainer {
      * @param <T> type of the value
      * @return new instance.
      */
+    @Nonnull
     public static <T> ValueAccumulator<T> from(@Nonnull final RetVal<T> value) {
         return new ValueAccumulator<T>().with(value);
     }
@@ -47,23 +50,9 @@ public class ValueAccumulator<T> implements ProblemContainer {
      * @param <T> type of the value
      * @return new instance.
      */
+    @Nonnull
     public static <T> ValueAccumulator<T> from(@Nonnull final RetNullable<T> value) {
         return new ValueAccumulator<T>().with(value);
-    }
-
-    /**
-     * Create a new value accumulator that starts with the given problem collection(s).
-     *
-     * @param container possible problem set.
-     * @param containers optional additional possible problem sets.
-     * @param <T> type of the value
-     * @return new instance.
-     */
-    public static <T> ValueAccumulator<T> from(
-            @Nonnull final ProblemContainer container,
-            @Nonnull final ProblemContainer... containers
-    ) {
-        return new ValueAccumulator<T>().with(container, containers);
     }
 
 
@@ -75,6 +64,7 @@ public class ValueAccumulator<T> implements ProblemContainer {
      * @param <T> type of the value
      * @return new instance.
      */
+    @Nonnull
     public static <T> ValueAccumulator<T> from(
             @Nonnull final Problem problem,
             @Nonnull final Problem... problems
@@ -88,6 +78,7 @@ public class ValueAccumulator<T> implements ProblemContainer {
      * @param value value or problems
      * @return this instance
      */
+    @Nonnull
     public ValueAccumulator<T> with(@Nonnull final RetVal<T> value) {
         this.problems.addAll(value.anyProblems());
         if (value.isOk()) {
@@ -102,27 +93,11 @@ public class ValueAccumulator<T> implements ProblemContainer {
      * @param value value or problems
      * @return this instance
      */
+    @Nonnull
     public ValueAccumulator<T> with(@Nonnull final RetNullable<T> value) {
         this.problems.addAll(value.anyProblems());
         if (value.isOk()) {
             this.values.add(value.result());
-        }
-        return this;
-    }
-
-    /**
-     * Add the given possible problems to the accumulator.
-     *
-     * @param container possible problem set.
-     * @param containers optional additional possible problem sets.
-     * @return this instance
-     */
-    public ValueAccumulator<T> with(
-            @Nonnull final ProblemContainer container, @Nonnull final ProblemContainer... containers
-    ) {
-        this.problems.addAll(container.anyProblems());
-        for (final ProblemContainer pc : containers) {
-            this.problems.addAll(pc.anyProblems());
         }
         return this;
     }
@@ -140,6 +115,22 @@ public class ValueAccumulator<T> implements ProblemContainer {
     ) {
         this.problems.add(problem);
         this.problems.addAll(Arrays.asList(problems));
+        return this;
+    }
+
+    /**
+     * Add the given possible problems to the accumulator.
+     *
+     * @param problemSet a collection of problems.
+     * @param problemSets vararg optional additional problems.
+     * @return this instance
+     */
+    @SafeVarargs
+    public final ValueAccumulator<T> with(
+            @Nonnull final Collection<Problem> problemSet,
+            @Nonnull final Collection<Problem>... problemSets
+    ) {
+        this.problems.addAll(Ret.joinProblemSets(problemSet, problemSets));
         return this;
     }
 
@@ -175,7 +166,7 @@ public class ValueAccumulator<T> implements ProblemContainer {
             @Nonnull final NonnullReturnFunction<V, RetVal<T>> func
     ) {
         if (inputRes.hasProblems()) {
-            return with(inputRes);
+            return with(inputRes.anyProblems());
         }
         inputRes.result().forEach((v) -> with(func.apply(v)));
         return this;
@@ -188,7 +179,8 @@ public class ValueAccumulator<T> implements ProblemContainer {
      */
     @Nonnull
     public Collection<T> getValues() {
-        return List.copyOf(this.values);
+        // Note: cannot be a List.of, because of possible null values.
+        return Collections.unmodifiableCollection(new ArrayList<>(this.values));
     }
 
     /**

@@ -57,11 +57,11 @@ public abstract class ObservedMonitor<T> {
     static ObservedMonitor<ProblemContainer> discoverCheckedInstance() {
         // This is a placeholder for an eventual, possible more robust
         // dynamic implementation.
-        final String debugEnv = System.getenv("RETVAL_MONITOR_DEBUG");
-        if ("true".equalsIgnoreCase(debugEnv)) {
-            return new DebugObservedMonitor<>("problem state");
+        if (SystemEnvUtil.isValueEqual("RETVAL_MONITOR_DEBUG", "true")) {
+            return new DebugObservedMonitor<>(
+                    "problem state", LoggingNotCompletedListener.INSTANCE);
         }
-        return new NoOpObservedMonitor<>();
+        return NoOpObservedMonitor.getInstance();
     }
 
     /**

@@ -23,8 +23,8 @@ import net.groboclown.retval.monitor.ObservedMonitor;
 @Immutable
 public class CloseableCollection implements AutoCloseable {
     // Place holder until this becomes a real boy.
-    public static final ObservedMonitor<AutoCloseable> CLOSEABLE_MONITOR
-            = new NoOpObservedMonitor<>();
+    public static final ObservedMonitor<AutoCloseable> CLOSEABLE_MONITOR =
+            NoOpObservedMonitor.getInstance();
 
     private final List<AutoCloseable> closeables;
     private final ObservedMonitor.Listener listener;

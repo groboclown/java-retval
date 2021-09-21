@@ -2,28 +2,35 @@
 package net.groboclown.retval.monitor;
 
 import java.lang.ref.Cleaner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.annotation.Nonnull;
-import net.groboclown.retval.ProblemContainer;
-
 
 /**
  * Maintains information about objects that need to be checked in a phantom reference cleaner.
  */
 public class DebugObservedMonitor<T> extends ObservedMonitor<T> {
-    private final Logger logger = Logger.getLogger(DebugObservedMonitor.class.getName());
+    private final NotCompletedListener listener;
     private final Cleaner cleaner = Cleaner.create();
     private final String name;
 
-    public DebugObservedMonitor(@Nonnull final String name) {
+    /**
+     * Create a new monitor instance.
+     *
+     * <p>Provided for eventual migration to generic monitor creation.
+     *
+     * @param listener listener for when not-completed states are detected.
+     * @param name name of the type being monitored
+     */
+    public DebugObservedMonitor(
+            @Nonnull final String name,
+            @Nonnull final NotCompletedListener listener) {
         this.name = name;
+        this.listener = listener;
     }
 
     @Nonnull
     @Override
     public Listener registerInstance(@Nonnull final T instance) {
-        return new LocalListener(this.name, instance, this.cleaner, this.logger);
+        return new LocalListener(this.name, instance, this.cleaner, this.listener);
     }
 
     @Override
@@ -34,13 +41,21 @@ public class DebugObservedMonitor<T> extends ObservedMonitor<T> {
 
     // A weird way of maintaining a state to use in the report generation, and to
     // trigger the generation of the report.
-    private static class NotCompleted extends Exception implements Runnable {
-        private final Logger logger;
+    private static class NotCompleted implements Runnable {
+        private final NotCompletedListener logger;
+        private final String monitorName;
+        private final String objectStr;
+        private final StackTraceElement[] stack;
         private volatile boolean stillOpen = true;
 
-        private NotCompleted(final Logger logger, final String message) {
-            super(message);
+        private NotCompleted(
+                @Nonnull final NotCompletedListener logger,
+                @Nonnull final String monitorName,
+                @Nonnull final String objectStr) {
             this.logger = logger;
+            this.monitorName = monitorName;
+            this.objectStr = objectStr;
+            this.stack = mungedStack(4);
         }
 
         void close() {
@@ -50,7 +65,7 @@ public class DebugObservedMonitor<T> extends ObservedMonitor<T> {
         @Override
         public void run() {
             if (this.stillOpen) {
-                this.logger.log(Level.WARNING, getMessage(), this);
+                this.logger.instanceNotCompleted(this.monitorName, this.objectStr, this.stack);
 
                 // Ensure this isn't called a second time.  The API doc for Cleaner says this
                 // will be called at most once, but this is just to be sure.
@@ -65,9 +80,9 @@ public class DebugObservedMonitor<T> extends ObservedMonitor<T> {
 
         LocalListener(
                 @Nonnull final String name, @Nonnull final Object object,
-                @Nonnull final Cleaner cleaner, @Nonnull final Logger logger
+                @Nonnull final Cleaner cleaner, @Nonnull final NotCompletedListener logger
         ) {
-            this.state = new NotCompleted(logger, name + " not called: " + object);
+            this.state = new NotCompleted(logger, name, object.toString());
             this.cleanable = cleaner.register(object, this.state);
         }
 
@@ -76,5 +91,14 @@ public class DebugObservedMonitor<T> extends ObservedMonitor<T> {
             this.state.close();
             this.cleanable.clean();
         }
+    }
+
+    private static StackTraceElement[] mungedStack(final int remove) {
+        final StackTraceElement[] currentStack = new Exception().fillInStackTrace().getStackTrace();
+        final StackTraceElement[] ret = new StackTraceElement[currentStack.length - remove];
+        // item [0] is the call stack place that created the exception, which is this
+        // method.
+        System.arraycopy(currentStack, remove, ret, 0, ret.length);
+        return ret;
     }
 }
