@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConfigurationReaderTest {
     MockProblemMonitor monitor;
@@ -66,6 +67,38 @@ class ConfigurationReaderTest {
                 List.of(),
                 this.monitor.getNeverObserved()
         );
+    }
+
+    @Test
+    void test_readProjectUser_ok() {
+        final Properties props = new Properties();
+        // setup properties correctly
+        props.setProperty("projects", "p1");
+        props.setProperty("project.p1.name", "p1");
+        props.setProperty("project.p1.users", "u1");
+        props.setProperty("project.p1.url", "http://example.com");
+        props.setProperty("user.u1.name", "user 1");
+        props.setProperty("user.u1.email", "user@example.com");
+
+        final RetVal<List<ProjectUser>> res = ConfigurationReader.readProjectUsers("p1", props);
+
+        // Validate no errors.
+        assertEquals(
+                List.of(),
+                res.anyProblems()
+        );
+
+        // Validate that no problems were dropped.
+        assertTrue(res.isOk());
+        assertEquals(
+                List.of(),
+                this.monitor.getNeverObserved()
+        );
+
+        // validate returned value
+        final List<ProjectUser> projects = res.result();
+        assertEquals(1, projects.size());
+        // ...
     }
 
     @BeforeEach

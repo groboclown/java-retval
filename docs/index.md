@@ -7,6 +7,7 @@ Library for Java 9+ programs to combine error messages and return values in a si
 
 * JavaDoc:
   * [1.0.0](1.0.0)
+  * [1.1.0](1.1.0)
 * [Main Project Page](https://github.com/groboclown/java-retval)
 * [Known Issues](https://github.com/groboclown/java-retval/issues)
 * User Guide
@@ -15,6 +16,10 @@ Library for Java 9+ programs to combine error messages and return values in a si
   * [How to Use](#how-to-use)
   * [Example Use Cases](#example-use-cases)
   * [Closeable Values](#closeable-values)
+  * [Custom Problems](#custom-problems)
+  * [Unit Tests](#unit-tests)
+  * [Validating All Checks are Accounted For](#validating-all-checks-are-accounted-for)
+  * [Identifying Code Smells](#identifying-code-smells)
 
 
 # User Guide
@@ -30,14 +35,14 @@ Exceptions have their use, and this isn't intended to replace them.  However, th
 
 ### What This Library Offers
 
-The library has 3 fundamental classes:
+The library has these fundamental classes:
 
 * `RetVoid` - a basic holder for problems.
 * `RetVal` - contains problems or a non-null value (but not both).
 * `RetNullable` - contains problems or a nullable value (but not both).
 * `WarningVal` - contains both problems (possibly empty) and a non-null value.
 
-These `Ret*` classes contain either an error state or a possible value; they cannot contain both.  The auxiliary methods help to make the program flow easier to work with them.   These classes are acutely `null` aware by using the `javax.annotation.Nullable` and `javax.annotation.Nonnull` annotations, and giving names to the classes to distinguish them.  You may find development easier if you use an IDE that is `null` annotation aware.
+These `Ret*` classes contain either an error state or a possible value; they cannot contain both.  The auxiliary methods help make the program flow easier to work with them.   These classes are acutely `null` aware by using the `javax.annotation.Nullable` and `javax.annotation.Nonnull` annotations, and giving names to the classes to distinguish them.  You may find development easier if you use an IDE that is `null` annotation aware.
 
 Along with these, the library provides some helper utility classes:
 
@@ -46,7 +51,8 @@ Along with these, the library provides some helper utility classes:
 * `ValueBuilder` - aids in the builder pattern in fault-tolerant ways.
 * `ProblemCollector` - a bit like a list, but conforms to library standard APIs and makes working with problem containers easier.
 
-On top of this, if you're running in a development environment, you can turn on monitoring, which helps you understand where problems or values may be dropped out of the application.
+On top of this, if you're running in a development environment, you can [turn on monitoring](#leave-no-check-unturned), which helps you understand where problems or values may be dropped out of the application.
+
 
 
 ## Importing into Your Project
@@ -55,7 +61,7 @@ Gradle projects will need to add the jar to the dependencies section:
 
 ```groovy
 dependencies {
-  implementation 'net.groboclown:retval:1.0.0'
+  implementation 'net.groboclown:retval:1.1.0'
 }
 ```
 
@@ -65,7 +71,7 @@ Maven projects will need to include the runtime dependency:
    <dependency>
       <groupId>net.groboclown</groupId>
       <artifactId>retval</artifactId>
-      <version>1.0.0</version>
+      <version>1.1.0</version>
       <scope>runtime</scope>
     </dependency>
 ```
@@ -73,7 +79,7 @@ Maven projects will need to include the runtime dependency:
 
 ## How To Use
 
-In all the basic `Ret*` types, the basic flow involves first collecting information that could have problems, then using that data, if it is problem-free, to perform other operations.
+In all the `Ret*` types, the normal flow involves first collecting information that could have problems, then using that data, if it is problem-free, to perform other operations.
 
 <!-- src/test/java/net/groboclown/retval/usecases/examples/ServiceRunner.java -->
 ```java
@@ -159,8 +165,8 @@ class WebRunner {
             .with(createToken(settingsDir), WebAccess::setJwtToken)
             .with(readUrl(settingsDir), WebAccess::setUrl)
 
-            // The "then" evaluates the results only if they all ran successfully.
-            .then()
+            // Evaluate the results into a valid object, only if there are discovered problems.
+            .evaluate()
             .then((access) -> fetchUrl(access.requireUrl(), access.requireJwtToken()));
   }
 
@@ -228,7 +234,7 @@ class FileUtil {
 }
 ```
 
-The `retval` library also includes helper functions to correctly and fully protect your application against incorrect close semantics that can easily creep into your program.  In the close version of this simple example, it seems to be more complex, but it prevents some exception situations missing errors that may have been returned.
+The `retval` library also includes helper functions to correctly and fully protect your application against incorrect close semantics that can easily creep into your program.
 
 <!-- src/test/java/net/groboclown/retval/usecases/examples/FileUtilCloser.java -->
 ```java
@@ -262,8 +268,117 @@ class FileUtilCloser {
 }
 ```
 
+This "close" version of the example requires a bit more complexity to use.  However, it prevents some situations with exceptions that would otherwise cause error conditions to not be returned correctly.  In particular, error catching on the close statement after exception handling could cause lost information.
 
-## Leave No Check Unturned
+
+## Custom Problems
+
+The library provides some simple problem classes to get you started.  However, chances are high that you will want more refined problem definitions.
+
+All problem classes must implement the `Problem` interface.  Because problems usually come from a user source, the additional interface `SouredProblem` provides an example for adding additional information to the problem.  You may find that you want a more robust problem source, perhaps a complex structure that includes a source file, and location in a Json document.
+
+The library doesn't put limitations on what your problem classes should be, but on the other hand, it doesn't provide much functionality for robust problems.  Future versions may include a larger variety of built-in problem classes.
+
+
+## Unit Tests
+
+To add unit tests around the `RetVal` classes, you will want to add in a `MockProblemMonitor` to ensure the code doesn't forget problems.
+
+In JUnit 5, you can add code like this:
+
+<!-- src/test/java/net/groboclown/retval/usecases/configuration/ConfigurationReaderTest.java -->
+```java
+class ConfigurationReaderTest {
+  MockProblemMonitor monitor;
+
+  @Test
+  void test_readProjectUser_empty() {
+    final Properties props = new Properties();
+    final RetVal<List<ProjectUser>> res = ConfigurationReader.readProjectUsers("p1", props);
+    assertEquals(
+            List.of(
+                    LocalizedProblem.from("no `projects` property")
+            ),
+            res.anyProblems()
+    );
+    assertEquals(
+            List.of(),
+            this.monitor.getNeverObserved()
+    );
+  }
+
+  @Test
+  void test_readProjectUser_noProjectValues() {
+    final Properties props = new Properties();
+    props.setProperty("projects", "p1");
+    final RetVal<List<ProjectUser>> res = ConfigurationReader.readProjectUsers("p1", props);
+    assertEquals(
+            List.of(
+                    LocalizedProblem.from("no `project.p1.name` property"),
+                    LocalizedProblem.from("no `project.p1.users` property"),
+                    LocalizedProblem.from("no `project.p1.url` property")
+            ),
+            res.anyProblems()
+    );
+    assertEquals(
+            List.of(),
+            this.monitor.getNeverObserved()
+    );
+  }
+
+  @Test
+  void test_readProjectUser_ok() {
+    final Properties props = new Properties();
+    // setup properties correctly
+    // ...
+    
+    // Run the code
+    final RetVal<List<ProjectUser>> res = ConfigurationReader.readProjectUsers("p1", props);
+    
+    // Validate no errors.
+    assertEquals(
+            List.of(),
+            res.anyProblems()
+    );
+    
+    // Validate that no problems were dropped.
+    assertTrue(res.isOk());
+    assertEquals(
+            List.of(),
+            this.monitor.getNeverObserved()
+    );
+
+    // validate returned value
+    final List<ProjectUser> projects = res.result();
+    assertEquals(1, projects.size());
+    // ...
+  }
+
+  @BeforeEach
+  void beforeEach() {
+    this.monitor = MockProblemMonitor.setup();
+    // In all cases, we want tracing enabled to ensure we track observation status.
+    this.monitor.traceEnabled = true;
+  }
+
+  @AfterEach
+  void afterEach() {
+    this.monitor.tearDown();
+  }
+  
+}
+```
+
+This ensures that the list of problems matches the expected set.  This takes advantage of the [monitor](#leave-no-check-unturned) system, by keeping track of every registered problem during the execution of the test case.
+
+The `beforeEach` method creates and configures the problem monitor for use by the test, and the `afterEach` restores the problem monitor to its previous state.
+
+The failure state checks ensure the list of expected problems return from `RetVal.getProblems()`.  Tests can rely on deterministic ordering of the problems.
+
+For success checks, it's more helpful to first check for an empty list of problems, rather than checking `isOk()` state first.  This allows the unit tests to report discovered problems in the error text, which helps in debugging failing tests.
+
+
+## Validating All Checks are Accounted For
 
 By default, the library will silently ignore Problems that haven't been checked.  Leaving these objects unchecked can be a source of subtle bugs, where problems that may occur in some configuration won't be passed on down stream.
 
@@ -271,7 +386,7 @@ However, you can set the environment variable `RETVAL_MONITOR_DEBUG` to `true` t
 
 
 
-## Smells
+## Identifying Code Smells
 
 The API is carefully constructed to push you down a path that doesn't lose information.  If you find yourself performing identity transforms, using no-op consumers, or filling the code with "if" statements, then you should reconsider your code logic.
 
@@ -287,10 +402,13 @@ class DataStore {
     RetVoid processData_poorlyThoughtOut(File source) {
         RetVal<MyData> res = readData(source);
         if (res.isOk()) {
-            myData = res.result();
+            this.myData = res.result();
             return RetVoid.ok();
         }
-        return res.thenVoid((x) -> {});
+        // res has a problem, so it can be directly forwarded.
+        // Returning as void would be even worse, here.
+        // e.g.: return res.thenVoid((x) -> {});
+        return res.forwardVoidProblems();
     }
     
     RetVoid processData_better(File source) {

@@ -37,8 +37,8 @@ class WebAccessExample {
                 .with(createToken(settingsDir), WebAccess::setJwtToken)
                 .with(readUrl(settingsDir), WebAccess::setUrl)
 
-                // The "then" evaluates the results only if they all ran successfully.
-                .then()
+                // Evaluate the results into a valid object, only if there are discovered problems.
+                .evaluate()
                 .then((access) -> fetchUrl(access.requireUrl(), access.requireJwtToken()));
         }
 

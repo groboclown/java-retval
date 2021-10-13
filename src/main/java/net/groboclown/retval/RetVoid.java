@@ -8,7 +8,6 @@ import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import net.groboclown.retval.function.NonnullFunction;
 import net.groboclown.retval.function.NonnullSupplier;
 import net.groboclown.retval.monitor.NoOpObservedMonitor;
 import net.groboclown.retval.monitor.ObservedMonitor;

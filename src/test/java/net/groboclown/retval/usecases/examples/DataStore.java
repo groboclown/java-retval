@@ -20,7 +20,10 @@ class DataStore {
             myData = res.result();
             return RetVoid.ok();
         }
-        return res.thenVoid((x) -> {});
+        // res has a problem, so it can be directly forwarded.
+        // Returning as void would be even worse, here.
+        // e.g.: return res.thenVoid((x) -> {});
+        return res.forwardVoidProblems();
     }
 
     RetVoid processData_better(File source) {

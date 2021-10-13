@@ -36,6 +36,27 @@ class ValueBuilderTest {
     }
 
     @Test
+    void evaluate_ok() {
+        final Object value = new Object();
+        final RetVal<Object> res = ValueBuilder.from(value).evaluate();
+        assertTrue(res.isOk());
+        assertSame(value, res.getValue());
+        assertEquals(List.of(), res.anyProblems());
+    }
+
+    @Test
+    void evaluate_problems() {
+        final LocalizedProblem problem = LocalizedProblem.from("p1");
+        final RetVal<Object> res = ValueBuilder
+                .from(new Object())
+                .with(RetVoid.fromProblem(problem))
+                .evaluate();
+        assertTrue(res.hasProblems());
+        assertNull(res.getValue());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
     void then_ok() {
         final Object value = new Object();
         final RetVal<Object> res = ValueBuilder.from(value).then();

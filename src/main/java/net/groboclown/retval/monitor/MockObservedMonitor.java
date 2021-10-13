@@ -21,6 +21,12 @@ public abstract class MockObservedMonitor<T> extends ObservedMonitor<T> {
         this.previous = previous;
     }
 
+    /**
+     * Get the previously installed monitor, which this monitor replaced.  Allows for
+     * easy restore of the previous state when the system finishes using this mock monitor.
+     *
+     * @return the previously installed monitor
+     */
     @Nonnull
     protected ObservedMonitor<T> getPrevious() {
         return this.previous;
@@ -48,8 +54,10 @@ public abstract class MockObservedMonitor<T> extends ObservedMonitor<T> {
 
 
     /**
-     * Finds the registered closeable instance for the object.  If not returned, then it was never
-     * registered.
+     * Finds the registered instance for the observed object.  If not returned, then it was never
+     * registered.  This uses `==` identity checking rather than {@link #equals(Object)}.
+     *
+     * <p>This method allows for a deep inspection into how the RetVal classes operate.
      *
      * @param value source object
      * @return registered closeable object, or null if never registered.

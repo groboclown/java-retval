@@ -59,8 +59,24 @@ public class ValueBuilder<T> implements ProblemContainer {
      * @return the value or problems.
      */
     @Nonnull
-    public RetVal<T> then() {
+    public RetVal<T> evaluate() {
         return this.problems.complete(this.value);
+    }
+
+
+    /**
+     * Convert this builder into a {@link RetVal}; if any problems exist, then the
+     * returned object will have those problems, otherwise it will contain the value.
+     *
+     * <p>Identical to {@link #evaluate()}; used for symmetry with the
+     * other Ret classes.  However, this can lead to usage confusion and cluttered reading
+     * of the code.
+     *
+     * @return the value or problems.
+     */
+    @Nonnull
+    public RetVal<T> then() {
+        return evaluate();
     }
 
 
