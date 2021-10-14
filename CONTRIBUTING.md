@@ -5,6 +5,17 @@
 You can contribute by writing up bugs, writing documentation, or helping out with the development effort.
 
 
+### Bugs, Feature Requests, and Questions
+
+The library uses [Github](https://github.com/groboclown/java-retval/issues) for issue tracking.  It should be used for tracking bugs and feature requests.
+
+**Bugs**: Please include a description of the actions run against the library that caused the issue, the expected behavior (if anything beyond "should not cause an exception"), and the actual behavior.  The *best* bug reports include a test case exposing the bad behavior.
+
+**Feature Requests**: Attempt to have a summary of the requested behavior and a solid use case for how the new behavior would be used by users of the library.
+
+**Questions**:  Questions should have the subject line of the issue be in the form of a question.
+
+
 ### Developers
 
 To develop the library, you'll need to fork the repository and submit changes back to the main project.  All changes you make will need to first have a good build.

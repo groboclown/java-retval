@@ -292,12 +292,15 @@ class ConfigurationReaderTest {
   MockProblemMonitor monitor;
 
   @Test
-  void test_readProjectUser_empty() {
+  void test_readProjectUser_noProjectValues() {
     final Properties props = new Properties();
+    props.setProperty("projects", "p1");
     final RetVal<List<ProjectUser>> res = ConfigurationReader.readProjectUsers("p1", props);
     assertEquals(
             List.of(
-                    LocalizedProblem.from("no `projects` property")
+                    LocalizedProblem.from("no `project.p1.name` property"),
+                    LocalizedProblem.from("no `project.p1.users` property"),
+                    LocalizedProblem.from("no `project.p1.url` property")
             ),
             res.anyProblems()
     );
@@ -377,27 +380,37 @@ class DataStore {
     private MyData myData;
     
     static RetVal<MyData> readData(File source) {
+        // Example method for loading the MyData with the contents of the source file.
         // ...
     }
     
     RetVoid processData_poorlyThoughtOut(File source) {
+        // This example runs using old-style Java that requires additional
+        // path handling.  This pushes explicit error checking into the
+        // readData caller.
         RetVal<MyData> res = readData(source);
         if (res.isOk()) {
             this.myData = res.result();
             return RetVoid.ok();
         }
         // res has a problem, so it can be directly forwarded.
-        // Returning as void would be even worse, here.
-        // e.g.: return res.thenVoid((x) -> {});
         return res.forwardVoidProblems();
+        
+        // Returning as void would be even worse:
+        // e.g.: return res.thenVoid((x) -> {});
     }
     
     RetVoid processData_better(File source) {
         return readData(source)
+                // This one call will invoke the lambda function if the return value
+                // from readData didn't cause problems.
                 .thenVoid((value) -> { this.myData = value; });
     }
     
     static RetVal<DataStore> processData_evenBetter(File source) {
+        // This particular version is an alternative to a constructor, and follows the
+        // builder pattern better.  It hides the complexity around creating the DataStore
+        // object + constructor invoking behind a single call.
         // In this way, the myData field could be made final.
         return readData(source)
                 .map((value) -> new DataStore(value));
