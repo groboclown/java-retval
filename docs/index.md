@@ -390,7 +390,7 @@ However, you can set the environment variable `RETVAL_MONITOR_DEBUG` to `true` t
 
 The API is carefully constructed to push you down a path that doesn't lose information.  If you find yourself performing identity transforms, using no-op consumers, or filling the code with "if" statements, then you should reconsider your code logic.
 
-<!-- src/test/java/net/groboclown/retval/usecases/examples/DataStore.java -->=
+<!-- src/test/java/net/groboclown/retval/usecases/examples/DataStore.java -->
 ```java
 class DataStore {
     private MyData myData;
