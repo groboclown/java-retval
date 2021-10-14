@@ -308,25 +308,6 @@ class ConfigurationReaderTest {
   }
 
   @Test
-  void test_readProjectUser_noProjectValues() {
-    final Properties props = new Properties();
-    props.setProperty("projects", "p1");
-    final RetVal<List<ProjectUser>> res = ConfigurationReader.readProjectUsers("p1", props);
-    assertEquals(
-            List.of(
-                    LocalizedProblem.from("no `project.p1.name` property"),
-                    LocalizedProblem.from("no `project.p1.users` property"),
-                    LocalizedProblem.from("no `project.p1.url` property")
-            ),
-            res.anyProblems()
-    );
-    assertEquals(
-            List.of(),
-            this.monitor.getNeverObserved()
-    );
-  }
-
-  @Test
   void test_readProjectUser_ok() {
     final Properties props = new Properties();
     // setup properties correctly
