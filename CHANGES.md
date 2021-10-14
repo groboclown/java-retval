@@ -17,6 +17,7 @@ Documentation Changes:
   * Included a section for custom problem classes.
   * Changed the name of the `Smells` and `Leave No Check Unturned` sections.
 * Improved JavaDoc descriptions for API calls in `MockObservedMonitor`.
+* Updated the `CONTRIBUTING.md` guide to include issue tracking.
 
 
 General Code Changes:
