@@ -4,7 +4,7 @@ plugins {
     id 'jacoco'
 }
 
-version = '1.1.0'
+version = '2.0.0'
 
 repositories {
     mavenCentral()
@@ -63,6 +63,13 @@ task zipSource(type: Zip) {
     from("${projectDir}/src/main/resources")
 }
 
+task jarTests(type: Zip) {
+    archiveClassifier = 'tests'
+
+    from("${projectDir}/src/test/java")
+    from("${projectDir}/src/test/resources")
+}
+
 assemble {
-    dependsOn zipJavadoc, zipSource
+    dependsOn zipJavadoc, zipSource, jarTests
 }

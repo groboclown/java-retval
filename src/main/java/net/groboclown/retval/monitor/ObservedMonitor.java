@@ -4,18 +4,19 @@ package net.groboclown.retval.monitor;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import net.groboclown.retval.ProblemContainer;
+import net.groboclown.retval.env.ObservedMonitorDetection;
 
 /**
  * A singleton that tracks values that have requires certain calls made.
  *
  * <p>This exists outside the objects that call here, so that they do not need to
- * allocate information
+ * allocate information.
  */
 public abstract class ObservedMonitor<T> {
     private static ObservedMonitor<ProblemContainer> CHECKED_INSTANCE;
 
     static {
-        CHECKED_INSTANCE = discoverCheckedInstance();
+        CHECKED_INSTANCE = ObservedMonitorDetection.discoverCheckedInstance();
     }
 
     @Nonnull
@@ -51,18 +52,6 @@ public abstract class ObservedMonitor<T> {
      * @return true if close tracing is enabled, false otherwise.
      */
     public abstract boolean isTraceEnabled();
-
-    // package-protected for testing purposes.
-    @Nonnull
-    static ObservedMonitor<ProblemContainer> discoverCheckedInstance() {
-        // This is a placeholder for an eventual, possible more robust
-        // dynamic implementation.
-        if (SystemEnvUtil.isValueEqual("RETVAL_MONITOR_DEBUG", "true")) {
-            return new DebugObservedMonitor<>(
-                    "problem state", LoggingNotCompletedListener.INSTANCE);
-        }
-        return NoOpObservedMonitor.getInstance();
-    }
 
     /**
      * Allow for runtime replacement of the singleton.  This is useful for testing or

@@ -100,7 +100,7 @@ class RetValTest {
         // Notice the implicit API usage check for altering the signature to an incompatible
         // type.
         final RetVal<Integer> forwarded = res.forwardProblems();
-        assertNotSame(res, forwarded);
+        assertSame(res, forwarded);
 
         // the "res" should be marked as checked, and the forwarded one as not.
         // This is due to the usecase of using this "forward" call to cause the
@@ -155,7 +155,7 @@ class RetValTest {
         // Notice the implicit API usage check for altering the signature to an incompatible
         // type.
         final RetNullable<Integer> forwarded = res.forwardNullableProblems();
-        assertNotSame(res, forwarded);
+        assertSame(res, forwarded);
 
         // the "res" should be marked as checked, and the forwarded one as not.
         // This is due to the usecase of using this "forward" call to cause the
@@ -186,7 +186,7 @@ class RetValTest {
         // Notice the implicit API usage check for altering the signature to an incompatible
         // type.
         final RetVoid forwarded = res.forwardVoidProblems();
-        assertNotSame(res, forwarded);
+        assertSame(res, forwarded);
 
         // the "res" should be marked as checked, and the forwarded one as not.
         // This is due to the usecase of using this "forward" call to cause the
@@ -296,13 +296,42 @@ class RetValTest {
         final int[] callCount = {0};
         final LocalizedProblem problem = LocalizedProblem.from("x");
         final RetVal<String> res = RetVal.ok("value");
+        final RetVoid problemRet = RetVoid.fromProblem(problem);
         final RetVal<String> val = res.thenValidate((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
-            return RetVoid.fromProblem(problem);
+            return problemRet;
         });
         // Because the problem state changed, these values must be different.
         assertNotSame(res, val);
+        // And an optimization causes these to be the same.
+        assertSame(problemRet, val);
+        // The check must have passed from the first to the second.
+        assertEquals(List.of(val), this.monitor.getNeverObserved());
+        // And the returned value has problems.
+        assertEquals(List.of(problem), val.anyProblems());
+        assertNull(val.getValue());
+        // And the callback should have been called once.
+        assertEquals("value", acceptedValue[0]);
+        assertEquals(1, callCount[0]);
+    }
+
+    @Test
+    void thenValidate_ok_generalProblem() {
+        final String[] acceptedValue = {"not set"};
+        final int[] callCount = {0};
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final RetVal<String> res = RetVal.ok("value");
+        final ProblemCollector problemRet = ProblemCollector.from(problem);
+        final RetVal<String> val = res.thenValidate((v) -> {
+            acceptedValue[0] = v;
+            callCount[0]++;
+            return problemRet;
+        });
+        // Because the problem state changed, these values must be different.
+        assertNotSame(res, val);
+        // And because the problems is not an underlying Ret* object, it is also different.
+        assertNotSame(problemRet, val);
         // The check must have passed from the first to the second.
         assertEquals(List.of(val), this.monitor.getNeverObserved());
         // And the returned value has problems.
@@ -310,6 +339,9 @@ class RetValTest {
         assertNull(val.getValue());
         // And the callback should have been called.
         assertEquals("value", acceptedValue[0]);
+        // And the callback should have been called once.
+        assertEquals("value", acceptedValue[0]);
+        assertEquals(1, callCount[0]);
     }
 
     @Test
@@ -426,7 +458,7 @@ class RetValTest {
         final RetVal<Integer> val = res.map((v) -> {
             throw new IllegalStateException("unreachable code");
         });
-        assertNotSame(res, val);
+        assertSame(res, val);
         assertEquals(List.of(val), this.monitor.getNeverObserved());
         assertEquals(List.of(problem), val.anyProblems());
     }
@@ -664,7 +696,7 @@ class RetValTest {
             acceptedValue[0] = v;
             callCount[0]++;
         });
-        assertNotSame(res, val);
+        assertSame(res, val);
         // The check must have passed from the first to the second.
         assertEquals(List.of(val), this.monitor.getNeverObserved());
         // And the state should be different.
@@ -874,7 +906,7 @@ class RetValTest {
     @Test
     void toString_ok() {
         assertEquals(
-                "RetVal(value: x)",
+                "Ret(value: x)",
                 RetVal.ok("x").toString()
         );
     }
@@ -882,7 +914,7 @@ class RetValTest {
     @Test
     void toString_problems() {
         assertEquals(
-                "RetVal(2 problems: abc; def)",
+                "Ret(2 problems: abc; def)",
                 RetVal.fromProblem(
                         LocalizedProblem.from("abc"),
                         LocalizedProblem.from("def")

@@ -1,7 +1,7 @@
 // Released under the MIT License.
 package net.groboclown.retval.monitor;
 
-import java.util.Map;
+import javax.annotation.Nonnull;
 import net.groboclown.retval.ProblemContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,30 +10,38 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ObservedMonitorTest {
-    Map<String, String> env;
+    ObservedMonitor<ProblemContainer> original;
+
 
     @Test
-    void discoverCheckedInstance_noMonitor() {
-        SystemEnvUtil.getSettings().remove("RETVAL_MONITOR_DEBUG");
-        final ObservedMonitor<ProblemContainer> monitor = ObservedMonitor.discoverCheckedInstance();
-        assertSame(NoOpObservedMonitor.getInstance(), monitor);
+    void setGet() {
+        final InnerObservedMonitor mon = new InnerObservedMonitor();
+        ObservedMonitor.setCheckedInstance(mon);
+        assertSame(mon, ObservedMonitor.getCheckedInstance());
     }
 
-    @Test
-    void discoverCheckedInstance_debugMonitor() {
-        SystemEnvUtil.getSettings().put("RETVAL_MONITOR_DEBUG", "true");
-        final ObservedMonitor<ProblemContainer> monitor = ObservedMonitor.discoverCheckedInstance();
-        assertEquals(DebugObservedMonitor.class, monitor.getClass());
-    }
 
     @BeforeEach
     void beforeEach() {
-        this.env = Map.copyOf(SystemEnvUtil.getSettings());
+        this.original = ObservedMonitor.getCheckedInstance();
     }
 
     @AfterEach
     void afterEach() {
-        SystemEnvUtil.getSettings().clear();
-        SystemEnvUtil.getSettings().putAll(this.env);
+        ObservedMonitor.setCheckedInstance(this.original);
+    }
+
+    static class InnerObservedMonitor extends ObservedMonitor<ProblemContainer> {
+
+        @Nonnull
+        @Override
+        public Listener registerInstance(@Nonnull final ProblemContainer instance) {
+            throw new IllegalStateException("not implemented");
+        }
+
+        @Override
+        public boolean isTraceEnabled() {
+            throw new IllegalStateException("not implemented");
+        }
     }
 }

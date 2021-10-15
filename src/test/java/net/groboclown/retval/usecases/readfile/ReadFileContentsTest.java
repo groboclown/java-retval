@@ -25,11 +25,17 @@ class ReadFileContentsTest {
                 Objects.requireNonNull(getClass().getResourceAsStream("ReadFileTest1.txt")),
                 StandardCharsets.UTF_8);
         assertEquals(
+                // Validate no problems
                 List.of(),
-                ReadFileContents.readFully("ReadFileTest1.txt", reader).thenVoid((text) -> {
-                    assertEquals("contents", text.trim());
-                }).anyProblems()
+                ReadFileContents
+                        .readFully("ReadFileTest1.txt", reader)
+                    .thenVoid((text) -> {
+                        // Validate the contents read
+                        assertEquals("contents", text.trim());
+                    })
+                .anyProblems()
         );
+        // Validate it was all observed.
         assertEquals(
                 List.of(),
                 this.monitor.getNeverObserved()

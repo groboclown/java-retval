@@ -1,18 +1,26 @@
 // Released under the MIT License.
 
-package net.groboclown.retval;
+package net.groboclown.retval.contract;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.groboclown.retval.Problem;
+import net.groboclown.retval.RetNullable;
+import net.groboclown.retval.RetVal;
+import net.groboclown.retval.RetVoid;
 import net.groboclown.retval.monitor.MockProblemMonitor;
 import net.groboclown.retval.problems.LocalizedProblem;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-class RetVoidTest {
+class RetVoidContract {
     MockProblemMonitor monitor;
 
     // isProblem is an alias for hasProblems, so only test out isProblem.

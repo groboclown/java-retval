@@ -2,16 +2,13 @@
 package net.groboclown.retval;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.groboclown.retval.function.NonnullReturnFunction;
-import net.groboclown.retval.function.NonnullSupplier;
-import net.groboclown.retval.monitor.ObservedMonitor;
+import net.groboclown.retval.impl.RetGenerator;
 
 /**
  * A problem container that contains a nullable value or problems, but
@@ -19,74 +16,81 @@ import net.groboclown.retval.monitor.ObservedMonitor;
  *
  * @param <T> type of the contained value
  */
-public class RetNullable<T> implements ProblemContainer {
+public interface RetNullable<T> extends ProblemContainer {
 
     // Developer notes:
-    // * Much of the logic here is a copy of the RetVal class, but with minor variations
-    //   on typing to use nullable types.  The logic that applies to the RetVal class also
-    //   applies here.
-    // * There could be a valid claim to say that RetVal and RetNullable could share an
-    //   underlying class to contain that logic.  Maybe that will be pursued in future versions.
-    //   For now, the logic is duplicated for the sake of memory.
+    //   1. This class must be carefully constructed to allow one class to represent it and
+    //      all the other Ret* interfaces.
 
-    private final List<Problem> problems;
-    private final ObservedMonitor.Listener listener;
-    private final T value;
-
+    /**
+     * Create a return object with a possibly null value and no problems.
+     *
+     * @param value value to set in the return object.
+     * @param <T> type of the return object.
+     * @return the return object, containing the value passed as argument and no problems.
+     */
     @Nonnull
-    public static <T> RetNullable<T> ok(@Nullable final T value) {
-        return new RetNullable<>(value);
+    static <T> RetNullable<T> ok(@Nullable final T value) {
+        return RetGenerator.nullableOk(value);
     }
 
+    /**
+     * Create a nullable return object with at least one problem.
+     *
+     * <p>By taking the argument form of {@literal (Problem, Problem...)}, this method allows for
+     * taking 1 or more problem values as variable length arguments (e.g.
+     * {@literal RetNullable.fromProblem(a, b, c)}), while forcing the list of problems to be
+     * non-empty.
+     *
+     * @param problem the first problem to add to the return object.
+     * @param problems optional list of additional problems
+     * @param <T> type of the return object; not directly used, because the object will have no
+     *           value associated with it.
+     * @return the return object with problems.
+     */
     @Nonnull
-    public static <T> RetNullable<T> fromProblem(
+    static <T> RetNullable<T> fromProblem(
             @Nonnull final Problem problem,
             @Nonnull final Problem... problems
     ) {
-        return new RetNullable<>(Ret.joinProblems(problem, problems));
+        return RetGenerator.nullableFromProblem(Ret.joinProblems(problem, problems));
     }
 
+
+    /**
+     * Create a nullable return object from collections of problems.
+     *
+     * @param problem the first problem collection to add to the return object.
+     * @param problems optional list of additional problem collections.
+     * @param <T> type of the return object; not directly used, because the object will have no
+     *           value associated with it.
+     * @return the return object with problems.
+     * @throws IllegalArgumentException if the collection arguments contain no problems.
+     */
     @SafeVarargs
     @Nonnull
-    public static <T> RetNullable<T> fromProblem(
+    static <T> RetNullable<T> fromProblem(
             @Nonnull final Collection<Problem> problem,
             @Nonnull final Collection<Problem>... problems
     ) {
-        return new RetNullable<>(Ret.joinProblemSets(problem, problems));
+        return RetGenerator.nullableFromProblem(Ret.joinProblemSets(problem, problems));
     }
 
     @Nonnull
-    public static <T> RetNullable<T> fromProblems(
+    static <T> RetNullable<T> fromProblems(
             @Nonnull final ProblemContainer problem,
             @Nonnull final ProblemContainer... problems
     ) {
-        return new RetNullable<>(Ret.joinRetProblems(problem, problems));
+        return RetGenerator.nullableFromProblem(Ret.joinRetProblems(problem, problems));
     }
 
     @SafeVarargs
     @Nonnull
-    public static <T> RetNullable<T> fromProblems(
+    static <T> RetNullable<T> fromProblems(
             @Nonnull final Collection<ProblemContainer> problem,
             @Nonnull final Collection<ProblemContainer>... problems
     ) {
-        return new RetNullable<>(Ret.joinRetProblemSets(problem, problems));
-    }
-
-    // package-protected to allow for memory efficient problem passing.
-    // Must be non-null, non-empty, and immutable.
-    RetNullable(@Nonnull final List<Problem> problems) {
-        if (problems.isEmpty()) {
-            throw new IllegalArgumentException("no problems defined");
-        }
-        this.problems = problems;
-        this.listener = ObservedMonitor.getCheckedInstance().registerInstance(this);
-        this.value = null;
-    }
-
-    private RetNullable(@Nullable final T value) {
-        this.problems = Collections.emptyList();
-        this.listener = ObservedMonitor.getCheckedInstance().registerInstance(this);
-        this.value = value;
+        return RetGenerator.nullableFromProblem(Ret.joinRetProblemSets(problem, problems));
     }
 
 
@@ -102,26 +106,19 @@ public class RetNullable<T> implements ProblemContainer {
      * @return the stored value
      */
     @Nullable
-    public T getValue() {
-        // Not considered a check, so the check listener is not called
-        return this.value;
-    }
+    T getValue();
 
     /**
      * Convert the value into an optional typed value.  Note that doing this will lose any
      * problem state, so checking for problems should be done before calling this.
      *
-     * <p>This function has limited use, generally after reporting problems, for programs
-     * that use Optional typing.
+     * <p>This function has limited use.  It's provided here to allow support for systems
+     * that use {@link Optional} values.
      *
      * @return the value as an optional type.  No checks are made against the problem state.
      */
     @Nonnull
-    public Optional<T> asOptional() {
-        // This does not indicate a check was made.  An implicit one can be made by the
-        // caller, but this method does not mark it as such, because all problem values are lost.
-        return Optional.ofNullable(this.value);
-    }
+    Optional<T> asOptional();
 
     /**
      * Get the result.  If this instance has problems, then a
@@ -132,11 +129,7 @@ public class RetNullable<T> implements ProblemContainer {
      * @throws IllegalStateException if there are problems
      */
     @Nullable
-    public T result() {
-        // Not considered a check, so the check listener is not called
-        Ret.enforceNoProblems(this.problems);
-        return this.value;
-    }
+    T result();
 
     /**
      * Convert the value into an optional typed value only if there are no problems.
@@ -145,11 +138,7 @@ public class RetNullable<T> implements ProblemContainer {
      * @throws IllegalStateException if there are problems
      */
     @Nonnull
-    public Optional<T> requireOptional() {
-        // Not considered a check, so the check listener is not called
-        Ret.enforceNoProblems(this.problems);
-        return Optional.ofNullable(this.value);
-    }
+    Optional<T> requireOptional();
 
     /**
      * Forward this object to RetVal instance, possibly as a different value type.  This will
@@ -164,71 +153,39 @@ public class RetNullable<T> implements ProblemContainer {
      * @throws IllegalStateException if this instance does not have problems.
      */
     @Nonnull
-    public <V> RetVal<V> forwardProblems() {
-        Ret.enforceHasProblems(this.problems);
-        // pass the check to the returned value
-        this.listener.onObserved();
-        // memory efficient access.
-        return new RetVal<>(this.problems);
-    }
+    <V> RetVal<V> forwardProblems();
 
     /**
      * Forward this instance as a nullable with a different value type, but only if it has
-     * errors.  If it does not have errors, then a runtime exception is thrown.
+     * problems.  If it does not have problems, then a runtime exception is thrown.
      *
      * <p>The most common use case is when a value construction requires multiple steps, and
      * an early step requires early exit from the function.  This allows a memory efficient
      * type casting of the problems to the construction function's type.
      *
      * @param <V> destination type
-     * @return the value, only if this instance has errors.
+     * @return the value, only if this instance has problems.
      */
     @Nonnull
-    public <V> RetNullable<V> forwardNullableProblems() {
-        Ret.enforceHasProblems(this.problems);
-
-        // There are circumstances where returning the exact same object isn't the right
-        // operation, because the returned value should require a separate check, and any call
-        // into this function usually means the caller already performed a check.
-        // If traces are enabled, then the memory efficient form can't be used.
-        if (ObservedMonitor.getCheckedInstance().isTraceEnabled()) {
-            // This object will go out of scope, but the problems are returned, so mark it
-            // as checked.
-            this.listener.onObserved();
-
-            // However, we can still reuse the read-only problem list.  So at least there's that.
-            return new RetNullable<>(this.problems);
-        }
-
-        // Else, use the super memory efficient way.
-        @SuppressWarnings("unchecked")
-        final RetNullable<V> t = (RetNullable<V>) this;
-        return t;
-    }
+    <V> RetNullable<V> forwardNullableProblems();
 
     /**
      * Forward this instance as a value-less object, but only if it has
-     * errors.  If it does not have errors, then a runtime exception is thrown.
+     * problems.  If it does not have problems, then a runtime exception is thrown.
      *
      * <p>The most common use case is when a value construction requires multiple steps, and
      * an early step requires early exit from the function.  This allows a memory efficient
      * type casting of the problems to the construction function's type.
      *
-     * @return the value, only if this instance has errors.
+     * @return the value, only if this instance has problems.
      */
     @Nonnull
-    public RetVoid forwardVoidProblems() {
-        Ret.enforceHasProblems(this.problems);
-        // pass the check to the returned value
-        this.listener.onObserved();
-        // memory efficient access.
-        return new RetVoid(this.problems);
-    }
+    RetVoid forwardVoidProblems();
 
     /**
      * Validate the value in the checker.  The checker can perform any amount of validation
-     * against the value as necessary, and returns an optional container of errors.  If no
-     * error is found, the checker can return null.
+     * against the value as necessary, and returns an optional container of problems.  If no
+     * problem is found, the checker can return null.
      *
      * <p>Be careful with over-using this method.  {@link ValueBuilder} and {@link ProblemCollector}
      * provide better solutions for constructing validation problems within a method.  This
@@ -239,26 +196,14 @@ public class RetNullable<T> implements ProblemContainer {
      * @return a retval with additional problems, or this value if no problem is found.
      */
     @Nonnull
-    public RetNullable<T> thenValidate(
+    RetNullable<T> thenValidate(
             @Nonnull final Function<T, ProblemContainer> checker
-    ) {
-        // This does not count as a validity check, so don't run the listener.
-        if (! this.problems.isEmpty()) {
-            return this;
-        }
-        final ProblemContainer discovered = checker.apply(this.value);
-        if (discovered != null && discovered.hasProblems()) {
-            // Move the checking to the returned value.
-            this.listener.onObserved();
-            return RetNullable.fromProblems(this, discovered);
-        }
-        return this;
-    }
+    );
 
     /**
      * Return a non-null {@link RetVal} value using a function that itself returns a {@link RetVal},
      * taking the current non-nullable value as an argument.
-     * The function is called only if this object has no error.  If it has an error, then
+     * The function is called only if this object has no problem.  If it has a problem, then
      * the current list of problems is returned as the new type.
      *
      * <p>This is similar to {@link #map(NonnullReturnFunction)}, but logically
@@ -272,19 +217,12 @@ public class RetNullable<T> implements ProblemContainer {
      *     set of problems).
      */
     @Nonnull
-    public <R> RetVal<R> then(@Nonnull final NonnullReturnFunction<T, RetVal<R>> func) {
-        return thenWrapped(
-                () -> func.apply(this.value),
-                // forwardProblems hsa its own check semantics
-                false,
-                this::forwardProblems
-        );
-    }
+    <R> RetVal<R> then(@Nonnull final NonnullReturnFunction<T, RetVal<R>> func);
 
     /**
      * Return a non-null {@link RetVal} value, using a function that returns a non-null value,
      * taking the current non-null value as an argument.
-     * The function is called only if this object has no problem.  If it has an error, then
+     * The function is called only if this object has no problem.  If it has a problem, then
      * the current list of problems is returned as the new type.
      *
      * <p>This is similar to {@link #then(NonnullReturnFunction)}, but logically
@@ -294,16 +232,11 @@ public class RetNullable<T> implements ProblemContainer {
      * @param func functional object that takes the current value as argument, and
      *             returns a transformed value.
      * @param <R> type of the returned value.
-     * @return the error of the current value, if it is an error, or the object returned by
+     * @return the problem of the current value, if it is a problem, or the object returned by
      *     the function.
      */
     @Nonnull
-    public <R> RetVal<R> map(@Nonnull final NonnullReturnFunction<T, R> func) {
-        if (isOk()) {
-            return RetVal.ok(func.apply(result()));
-        }
-        return forwardProblems();
-    }
+    <R> RetVal<R> map(@Nonnull final NonnullReturnFunction<T, R> func);
 
     /**
      * Return a non-null {@link RetNullable} value using a function that itself returns a
@@ -317,20 +250,13 @@ public class RetNullable<T> implements ProblemContainer {
      * @param func functional object that returns a RetNullable and takes the current
      *            value as argument.
      * @param <R> type of the returned value.
-     * @return the error of the current value, if it is an error, or the object returned by
+     * @return the problem of the current value, if it is a problem, or the object returned by
      *     the supplier.
      */
     @Nonnull
-    public <R> RetNullable<R> thenNullable(
+    <R> RetNullable<R> thenNullable(
             @Nonnull final NonnullReturnFunction<T, RetNullable<R>> func
-    ) {
-        return thenWrapped(
-                () -> func.apply(this.value),
-                // forwardProblems hsa its own check semantics
-                false,
-                this::forwardNullableProblems
-        );
-    }
+    );
 
     /**
      * If this instance has no problems, then it runs the parameter with the
@@ -347,14 +273,7 @@ public class RetNullable<T> implements ProblemContainer {
      * @return a transformed version of this object.
      */
     @Nonnull
-    public <R> RetNullable<R> mapNullable(@Nonnull final Function<T, R> func) {
-        return thenWrapped(
-                () -> RetNullable.ok(func.apply(this.value)),
-                // problem forwarder has its own checking
-                false,
-                this::forwardNullableProblems
-        );
-    }
+    <R> RetNullable<R> mapNullable(@Nonnull final Function<T, R> func);
 
     /**
      * Run the parameter, only if this instance has no problems.
@@ -363,16 +282,7 @@ public class RetNullable<T> implements ProblemContainer {
      * @return this instance
      */
     @Nonnull
-    public RetNullable<T> thenRunNullable(@Nonnull final Runnable runner) {
-        // thenWrapped performs a "onChecked" call, and this method
-        // returns "this", so this cannot use the wrapped helper.
-        // By returning "this", it means that the "checked" call can only be done
-        // if this function is considered performing a check, which this isn't.
-        if (this.problems.isEmpty()) {
-            runner.run();
-        }
-        return this;
-    }
+    RetNullable<T> thenRunNullable(@Nonnull final Runnable runner);
 
     /**
      * Run the consumer with the current value, only if this instance
@@ -382,16 +292,7 @@ public class RetNullable<T> implements ProblemContainer {
      * @return this instance.
      */
     @Nonnull
-    public RetNullable<T> thenRunNullable(@Nonnull final Consumer<T> consumer) {
-        // thenWrapped performs a "onChecked" call, and this method
-        // returns "this", so this cannot use the wrapped helper.
-        // By returning "this", it means that the "checked" call can only be done
-        // if this function is considered performing a check, which this isn't.
-        if (this.problems.isEmpty()) {
-            consumer.accept(this.value);
-        }
-        return this;
-    }
+    RetNullable<T> thenRunNullable(@Nonnull final Consumer<T> consumer);
 
     /**
      * Pass the value of this instance to the consumer, only if there are no problems.  Return
@@ -404,16 +305,7 @@ public class RetNullable<T> implements ProblemContainer {
      * @return a response that contains the problem state of the current value.
      */
     @Nonnull
-    public RetVoid thenVoid(@Nonnull final Consumer<T> consumer) {
-        return thenWrapped(
-                () -> {
-                    consumer.accept(this.value);
-                    return RetVoid.ok();
-                },
-                // problem condition will pass the check to a new object
-                true,
-                () -> new RetVoid(this.problems));
-    }
+    RetVoid thenVoid(@Nonnull final Consumer<T> consumer);
 
     /**
      * Pass the value of this instance to the consumer, only if there are no problems.  Return
@@ -426,102 +318,5 @@ public class RetNullable<T> implements ProblemContainer {
      * @return a response that contains the problem state of the current value.
      */
     @Nonnull
-    public RetVoid thenVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func) {
-        return thenWrapped(
-                () -> func.apply(this.value),
-                // problem condition will pass the check to a new object
-                true,
-                () -> new RetVoid(this.problems)
-        );
-    }
-
-    private <R> R thenWrapped(
-            @Nonnull final NonnullSupplier<R> supplier,
-            final boolean problemIsCheck,
-            @Nonnull final NonnullSupplier<R> problemFactory
-    ) {
-        if (! this.problems.isEmpty()) {
-            if (problemIsCheck) {
-                this.listener.onObserved();
-            }
-            return problemFactory.get();
-        }
-
-        // The supplier will always return a new object and, and this method must pass the
-        // checking on to it.
-        this.listener.onObserved();
-        return supplier.get();
-    }
-
-    @Override
-    public boolean hasProblems() {
-        // This alone does not make a check.  The problems themselves must be extracted or
-        // forwarded.  However, because the result call also does not count as a check,
-        // this will count as the check only if there are no problems.
-        if (this.problems.isEmpty()) {
-            this.listener.onObserved();
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public boolean isProblem() {
-        return hasProblems();
-    }
-
-    @Override
-    public boolean isOk() {
-        // This alone does not make a check.  The problems themselves must be extracted or
-        // forwarded.  However, because the result call also does not count as a check,
-        // this will count as the check only if there are no problems.
-        if (this.problems.isEmpty()) {
-            this.listener.onObserved();
-            return true;
-        }
-        return false;
-    }
-
-    @Nonnull
-    @Override
-    public Collection<Problem> anyProblems() {
-        // Consider this as checking for problems only if there are problems.
-        // Generally, this combines the problems
-        // in this instance with a larger collection, which can itself be used to check if any
-        // of the values had problems.
-        if (! this.problems.isEmpty()) {
-            this.listener.onObserved();
-        }
-        return this.problems;
-    }
-
-    @Nonnull
-    @Override
-    public Collection<Problem> validProblems() {
-        // Just like result() doesn't trigger an observation, so this one doesn't either.
-        return Ret.enforceHasProblems(this.problems);
-    }
-
-    @Nonnull
-    @Override
-    public String debugProblems(@Nonnull final String joinedWith) {
-        return Ret.joinProblemMessages(joinedWith, this.problems);
-    }
-
-    @Override
-    public void joinProblemsWith(@Nonnull final Collection<Problem> problemList) {
-        // This acts as closing off this value and passing the problem state to the
-        // list.
-        this.listener.onObserved();
-        problemList.addAll(this.problems);
-    }
-
-    @Override
-    public String toString() {
-        return "RetNullable("
-                + (this.problems.isEmpty()
-                        ? ("value: " + this.value)
-                        : (this.problems.size() + " problems: " + debugProblems("; "))
-                ) + ")";
-    }
+    RetVoid thenVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func);
 }
