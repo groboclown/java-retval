@@ -61,7 +61,7 @@ Gradle projects will need to add the jar to the dependencies section:
 
 ```groovy
 dependencies {
-  implementation 'net.groboclown:retval:1.1.0'
+  implementation 'net.groboclown:retval:2.0.0'
 }
 ```
 
@@ -71,7 +71,7 @@ Maven projects will need to include the runtime dependency:
    <dependency>
       <groupId>net.groboclown</groupId>
       <artifactId>retval</artifactId>
-      <version>1.1.0</version>
+      <version>2.0.0</version>
       <scope>runtime</scope>
     </dependency>
 ```
@@ -366,8 +366,11 @@ For success checks, it's more helpful to first check for an empty list of proble
 
 By default, the library will silently ignore Problems that haven't been checked.  Leaving these objects unchecked can be a source of subtle bugs, where problems that may occur in some configuration won't be passed on down stream.
 
-However, you can set the environment variable `RETVAL_MONITOR_DEBUG` to `true` to enable logging when a tracked closeable or problem collection is garbage collected but not checked.  This allows for better inspection of where these problem areas may live.  Problems are sent to the Java logging mechanism's warning level, along with a stack trace for where the object was first created.
+However, you can set the environment variable or Java property `RETVAL_MONITOR_DEBUG` to `true` to enable logging when a tracked closeable or problem collection is garbage collected but not checked.  This allows for better inspection of where these problem areas may live.  Problems are sent to the Java logging mechanism's warning level, along with a stack trace for where the object was first created.
 
+For production environments, you can set the environment variable or Java property `RETVAL_PRODUCTION` to `true`.  This will disable all monitoring capabilities, which enables optimizations that disables many checks, calls, and object allocations for the `Ret*` objects.
+
+Under the covers, the code provides for two extension points - `Ret*` object creation and monitor implementation.  You can't control these directly through startup parameters, but your code can call static methods on the `RetGenerator` class and the `ObservedMonitorRegistrar` class.  See the API documentation for more details if you are interested in changing these out.  These mechanisms are used by the unit test helpers.
 
 
 ## Identifying Code Smells
