@@ -19,9 +19,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -79,7 +77,8 @@ public abstract class RetNullableContract {
 
     @Test
     void requireOptional_problem() {
-        final RetNullable<Object> res = createForNullable(List.of(LocalizedProblem.from("x")));
+        final RetNullable<Object> res = createForNullableProblems(
+                List.of(LocalizedProblem.from("x")));
         try {
             res.requireOptional();
             fail("Did not throw ISE");
@@ -210,7 +209,6 @@ public abstract class RetNullableContract {
         // Notice the implicit API usage check for altering the signature to an incompatible
         // type.
         final RetVoid forwarded = res.forwardVoidProblems();
-        assertSame(res, forwarded);
 
         assertEquals(List.of(problem), forwarded.anyProblems());
         assertTrue(forwarded.hasProblems());
@@ -225,9 +223,6 @@ public abstract class RetNullableContract {
             throw new IllegalStateException("unreachable code");
         });
 
-        // Because there were problems in the original value, the original value was
-        // returned.
-        assertSame(res, val);
         // And the original problem list should remain.
         assertEquals(List.of(problem), val.anyProblems());
         // And the callback should not have been called.
@@ -244,9 +239,6 @@ public abstract class RetNullableContract {
             callCount[0]++;
             return null;
         });
-        // Because the state of the original value didn't change, the original value
-        // should have been returned.
-        assertSame(res, val);
         // And the state should not have been changed.  It's immutable, so, yeah.
         assertEquals(List.of(), val.anyProblems());
         assertEquals("value", val.result());
@@ -263,11 +255,8 @@ public abstract class RetNullableContract {
         final RetNullable<String> val = res.thenValidate((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
-            return RetVoid.ok();  // non-null and no problems
+            return createForNullable("x");  // non-null and no problems
         });
-        // Because the state of the original value didn't change, the original value
-        // should have been returned.
-        assertSame(res, val);
         // And the state should not have been changed.  It's immutable, so, yeah.
         assertEquals(List.of(), val.anyProblems());
         assertEquals("value", val.result());
@@ -282,16 +271,12 @@ public abstract class RetNullableContract {
         final int[] callCount = {0};
         final LocalizedProblem problem = LocalizedProblem.from("x");
         final RetNullable<String> res = createForNullable("value");
-        final RetVoid problemRet = RetVoid.fromProblem(problem);
+        final RetNullable<Object> problemRet = createForNullableProblems(List.of(problem));
         final RetNullable<String> val = res.thenValidate((v) -> {
             acceptedValue[0] = v;
             callCount[0]++;
             return problemRet;
         });
-        // Because the problem state changed, these values must be different.
-        assertNotSame(res, val);
-        // And an optimization causes these to be the same.
-        assertSame(problemRet, val);
         // And the returned value has problems.
         assertEquals(List.of(problem), val.anyProblems());
         assertNull(val.getValue());
@@ -412,7 +397,6 @@ public abstract class RetNullableContract {
             callCount[0]++;
             return createForNullable(v + 2);
         });
-        assertNotSame(res, val);
         // And the state should be different.
         assertEquals(List.of(), val.anyProblems());
         assertEquals(5, val.result());
@@ -430,7 +414,6 @@ public abstract class RetNullableContract {
             callCount[0]++;
             return createForNullable(null);
         });
-        assertNotSame(res, val);
         // And the state should be different.
         assertEquals(List.of(), val.anyProblems());
         assertNull(val.result());

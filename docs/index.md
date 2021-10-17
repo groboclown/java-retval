@@ -6,8 +6,8 @@ Library for Java 9+ programs to combine error messages and return values in a si
 # Topics
 
 * JavaDoc:
+  * [2.0.0](2.0.0)
   * [1.0.0](1.0.0)
-  * [1.1.0](1.1.0)
 * [Main Project Page](https://github.com/groboclown/java-retval)
 * [Known Issues](https://github.com/groboclown/java-retval/issues)
 * User Guide

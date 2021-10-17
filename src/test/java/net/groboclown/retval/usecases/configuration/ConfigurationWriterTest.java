@@ -116,7 +116,6 @@ class ConfigurationWriterTest {
     @BeforeEach
     void beforeEach() {
         this.monitor = MockProblemMonitor.setup();
-        // For robustness...
         this.monitor.traceEnabled = true;
     }
 

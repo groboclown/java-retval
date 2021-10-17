@@ -121,6 +121,6 @@ public class SimpleRetVoidOk implements RetVoid {
 
     @Override
     public String toString() {
-        return "RetVoid(ok)";
+        return "Ret(ok)";
     }
 }

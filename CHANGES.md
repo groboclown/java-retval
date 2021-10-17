@@ -11,6 +11,8 @@ API Changes:
 * The `Ret*` values are now interfaces, which means any extensions of those types now require interface usage rather than extends.  Other uses that may have performed Class level introspection will need work.
 * This version introduces an extra level of extensibility by allowing for runtime replacement of the underlying `Ret*` value generation mechanism. 
 * `RetVoid` now supports `forwardProblems`, `forwardNullableProblems`, and `forwardVoidProblems` for compatibility with the other `Ret*` values.
+* `ObservedMonitor` is now an interface, and the API call to replace it has moved to the `ObservedMonitorRegistrar` class.
+* `ValueBuilder` prefers a new method call, `evaluate()`, over the previous `then()` statement.  The original `then()` statement could lead to confusion with the usage.
 
 
 Implementation Changes:
@@ -25,17 +27,6 @@ Documentation Changes:
 
 * Clarification on the `thenValidate` calls.
 * General word usage clarifications.
-
-
-## 1.1.0
-
-API Changes:
-
-* `ValueBuilder` prefers a new method call, `evaluate()`, over the previous `then()` statement.  The original `then()` statement could lead to confusion with the usage.
-
-
-Documentation Changes:
-
 * Updated `WebAccessExample` to reflect new `evaluate` API.
 * Updated `DataStore` example to use a slightly better API.
 * Updated `index.md` user guide:
@@ -44,13 +35,6 @@ Documentation Changes:
   * Included a section for custom problem classes.
   * Changed the name of the `Smells` and `Leave No Check Unturned` sections.
 * Improved JavaDoc descriptions for API calls in `MockObservedMonitor`.
-* Updated the `CONTRIBUTING.md` guide to include issue tracking.
-
-
-General Code Changes:
-
-* Basic code format cleanup.
-* Improved the example tests for `ConfigurationReaderTest.java`
 
 
 ## 1.0.0

@@ -8,7 +8,6 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.groboclown.retval.Problem;
-import net.groboclown.retval.ProblemCollector;
 import net.groboclown.retval.ProblemContainer;
 import net.groboclown.retval.RetNullable;
 import net.groboclown.retval.RetVal;
@@ -22,7 +21,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Contract tests for the Return objects which are monitored.  There are strict rules around
@@ -345,6 +344,7 @@ public abstract class MonitoredContract {
         // The original "res" is now observed
         assertNeverObserved(forwarded);
     }
+
 
     // ----------------------------------------------------------------------
     // forwardNullableProblems has the same observation semantics as
@@ -1234,11 +1234,7 @@ public abstract class MonitoredContract {
     void nullable_validProblems_problem() {
         final RetNullable<Long> res = createForNullableProblems(
                 List.of(LocalizedProblem.from("f")));
-        try {
-            res.validProblems();
-        } catch (final IllegalStateException e) {
-            // skip check
-        }
+        res.validProblems();
         assertNeverObserved();
     }
 
@@ -1278,11 +1274,7 @@ public abstract class MonitoredContract {
     @Test
     void void_validProblems_problem() {
         final RetVoid res = createForVoidProblems(List.of(LocalizedProblem.from("f")));
-        try {
-            res.validProblems();
-        } catch (final IllegalStateException e) {
-            // skip check
-        }
+        res.validProblems();
         assertNeverObserved();
     }
 
@@ -1431,14 +1423,14 @@ public abstract class MonitoredContract {
     // Test Boilerplate
 
     @BeforeEach
-    public final void beforeEach() {
+    final void beforeEach() {
         this.monitor = MockProblemMonitor.setup();
         // Default to using tracing.
         this.monitor.traceEnabled = true;
     }
 
     @AfterEach
-    public final void afterEach() {
+    final void afterEach() {
         this.monitor.tearDown();
     }
 

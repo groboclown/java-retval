@@ -361,12 +361,42 @@ class RetTest {
         assertEquals(1, closer.closeCount);
     }
 
+    @Test
+    void enforceNoProblems_problems() {
+        try {
+            Ret.enforceNoProblems(List.of(LocalizedProblem.from("x")));
+            fail("Did not throw ISE");
+        } catch (final IllegalStateException e) {
+            // don't inspect message
+        }
+    }
+
+    @Test
+    void enforceNoProblems_noProblems() {
+        Ret.enforceNoProblems(List.of());
+        // No exception is thrown.
+    }
+
+    @Test
+    void enforceHasProblems_problems() {
+        Ret.enforceHasProblems(List.of(LocalizedProblem.from("x")));
+        // No exception is thrown.
+    }
+
+    @Test
+    void enforceHasProblems_noProblems() {
+        try {
+            Ret.enforceHasProblems(List.of());
+            fail("Did not throw ISE");
+        } catch (final IllegalStateException e) {
+            // don't inspect message
+        }
+    }
+
 
     @BeforeEach
     void beforeEach() {
         this.monitor = MockProblemMonitor.setup();
-        // ensure the tracing stuff is always on to ensure monitor state
-        // is properly traced.
         this.monitor.traceEnabled = true;
     }
 

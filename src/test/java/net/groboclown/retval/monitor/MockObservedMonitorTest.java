@@ -25,10 +25,10 @@ class MockObservedMonitorTest {
     void setup_tearDown() {
         final TestableObservedMonitor<ProblemContainer> replacement =
                 new TestableObservedMonitor<>();
-        ObservedMonitor.setCheckedInstance(replacement);
+        ObservedMonitorRegistrar.setCheckedInstance(replacement);
 
         final MockProblemMonitor mock = MockProblemMonitor.setup();
-        assertSame(mock, ObservedMonitor.getCheckedInstance());
+        assertSame(mock, ObservedMonitorRegistrar.getCheckedInstance());
         assertSame(replacement, mock.getPrevious());
         try {
             MockProblemMonitor.setup();
@@ -37,24 +37,24 @@ class MockObservedMonitorTest {
             // skip exception inspection.
         }
         // Ensure the registered instance didn't change.
-        assertSame(mock, ObservedMonitor.getCheckedInstance());
+        assertSame(mock, ObservedMonitorRegistrar.getCheckedInstance());
 
         // Tear down.
         mock.tearDown();
-        assertSame(replacement, ObservedMonitor.getCheckedInstance());
+        assertSame(replacement, ObservedMonitorRegistrar.getCheckedInstance());
 
         // Should only work if the mock is current.
         mock.tearDown();
-        assertSame(replacement, ObservedMonitor.getCheckedInstance());
+        assertSame(replacement, ObservedMonitorRegistrar.getCheckedInstance());
 
-        ObservedMonitor.setCheckedInstance(this.original);
+        ObservedMonitorRegistrar.setCheckedInstance(this.original);
         mock.tearDown();
-        assertSame(this.original, ObservedMonitor.getCheckedInstance());
+        assertSame(this.original, ObservedMonitorRegistrar.getCheckedInstance());
 
         // If we run it again and it's active, it will restore itself again.
-        ObservedMonitor.setCheckedInstance(mock);
+        ObservedMonitorRegistrar.setCheckedInstance(mock);
         mock.tearDown();
-        assertSame(replacement, ObservedMonitor.getCheckedInstance());
+        assertSame(replacement, ObservedMonitorRegistrar.getCheckedInstance());
     }
 
     @Test
@@ -112,14 +112,14 @@ class MockObservedMonitorTest {
 
     @BeforeEach
     void beforeEach() {
-        this.original = ObservedMonitor.getCheckedInstance();
-        ObservedMonitor.setCheckedInstance(new TestableObservedMonitor<>());
+        this.original = ObservedMonitorRegistrar.getCheckedInstance();
+        ObservedMonitorRegistrar.setCheckedInstance(new TestableObservedMonitor<>());
     }
 
     @AfterEach
     void afterEach() {
         if (this.original != null) {
-            ObservedMonitor.setCheckedInstance(this.original);
+            ObservedMonitorRegistrar.setCheckedInstance(this.original);
         }
     }
 

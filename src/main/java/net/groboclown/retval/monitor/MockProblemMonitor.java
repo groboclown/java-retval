@@ -10,6 +10,7 @@ import net.groboclown.retval.ProblemContainer;
  * this has the potential to quickly consume lots of memory.
  */
 public class MockProblemMonitor extends MockObservedMonitor<ProblemContainer> {
+    private final Throwable created;
 
     /**
      * Create a new mock monitor, and register it.
@@ -17,27 +18,30 @@ public class MockProblemMonitor extends MockObservedMonitor<ProblemContainer> {
      * @return the new mock instance.
      */
     public static MockProblemMonitor setup() {
-        final ObservedMonitor<ProblemContainer> previous = ObservedMonitor.getCheckedInstance();
+        final ObservedMonitor<ProblemContainer> previous =
+                ObservedMonitorRegistrar.getCheckedInstance();
         if (previous instanceof MockProblemMonitor) {
             throw new IllegalStateException(
                     "Already have a " + MockProblemMonitor.class.getSimpleName()
-                    + " registered");
+                    + " registered", ((MockProblemMonitor) previous).created);
         }
         final MockProblemMonitor ret = new MockProblemMonitor(previous);
-        ObservedMonitor.setCheckedInstance(ret);
+        ObservedMonitorRegistrar.setCheckedInstance(ret);
         return ret;
     }
 
     private MockProblemMonitor(@Nonnull final ObservedMonitor<ProblemContainer> previous) {
         super(previous);
+        this.created = new Throwable();
+        this.created.fillInStackTrace();
     }
 
     /**
      * De-register this monitor.
      */
     public void tearDown() {
-        if (ObservedMonitor.getCheckedInstance() == this) {
-            ObservedMonitor.setCheckedInstance(getPrevious());
+        if (ObservedMonitorRegistrar.getCheckedInstance() == this) {
+            ObservedMonitorRegistrar.setCheckedInstance(getPrevious());
         }
     }
 }

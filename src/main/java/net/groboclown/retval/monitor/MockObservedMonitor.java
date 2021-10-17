@@ -3,6 +3,7 @@ package net.groboclown.retval.monitor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -10,15 +11,15 @@ import javax.annotation.Nullable;
  * A mock check monitor, suitable for testing.  Note that if used in a non-test environment,
  * this has the potential to quickly consume lots of memory.
  */
-public abstract class MockObservedMonitor<T> extends ObservedMonitor<T> {
+public abstract class MockObservedMonitor<T> implements ObservedMonitor<T> {
     private final ObservedMonitor<T> previous;
     private final List<Registered<T>> observables = new ArrayList<>();
 
     // Allow for easily changing the trace enabled behavior.
     public boolean traceEnabled = false;
 
-    protected MockObservedMonitor(final ObservedMonitor<T> previous) {
-        this.previous = previous;
+    protected MockObservedMonitor(@Nonnull final ObservedMonitor<T> previous) {
+        this.previous = Objects.requireNonNull(previous, "previous monitor");
     }
 
     /**

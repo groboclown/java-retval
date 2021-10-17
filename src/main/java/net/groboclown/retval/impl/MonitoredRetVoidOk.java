@@ -12,6 +12,7 @@ import net.groboclown.retval.RetVoid;
 import net.groboclown.retval.function.NonnullSupplier;
 import net.groboclown.retval.monitor.NoOpObservedMonitor;
 import net.groboclown.retval.monitor.ObservedMonitor;
+import net.groboclown.retval.monitor.ObservedMonitorRegistrar;
 
 
 /**
@@ -29,7 +30,7 @@ public class MonitoredRetVoidOk implements RetVoid {
     private final ObservedMonitor.Listener listener;
 
     MonitoredRetVoidOk() {
-        this.listener = ObservedMonitor.getCheckedInstance().registerInstance(this);
+        this.listener = ObservedMonitorRegistrar.registerCheckedInstance(this);
     }
 
     private MonitoredRetVoidOk(@Nonnull final ObservedMonitor.Listener listener) {
@@ -143,6 +144,6 @@ public class MonitoredRetVoidOk implements RetVoid {
 
     @Override
     public String toString() {
-        return "Ret()";
+        return "Ret(ok)";
     }
 }

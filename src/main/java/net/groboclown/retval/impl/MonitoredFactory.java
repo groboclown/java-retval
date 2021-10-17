@@ -9,13 +9,14 @@ import net.groboclown.retval.RetNullable;
 import net.groboclown.retval.RetVal;
 import net.groboclown.retval.RetVoid;
 import net.groboclown.retval.monitor.ObservedMonitor;
+import net.groboclown.retval.monitor.ObservedMonitorRegistrar;
 
 
 /**
  * Generates monitored versions of the return types.
  */
 public class MonitoredFactory implements ReturnTypeFactory {
-    public static MonitoredFactory INSTANCE = new MonitoredFactory();
+    public static final MonitoredFactory INSTANCE = new MonitoredFactory();
 
     private MonitoredFactory() {
         // Utility class
@@ -48,7 +49,7 @@ public class MonitoredFactory implements ReturnTypeFactory {
     @Nonnull
     @Override
     public RetVoid createVoidOk() {
-        if (ObservedMonitor.getCheckedInstance().isTraceEnabled()) {
+        if (ObservedMonitorRegistrar.isCheckedTraceEnabled()) {
             return new MonitoredRetVoidOk();
         }
         return SimpleRetVoidOk.OK;
@@ -56,7 +57,7 @@ public class MonitoredFactory implements ReturnTypeFactory {
 
     @Nonnull
     @Override
-    public RetVoid voidFromProblems(@Nonnull final List<Problem> problems) {
+    public RetVoid createVoidFromProblems(@Nonnull final List<Problem> problems) {
         return new MonitoredReturnProblem<Void>(problems);
     }
 }

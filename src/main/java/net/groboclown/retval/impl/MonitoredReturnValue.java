@@ -20,6 +20,7 @@ import net.groboclown.retval.function.NonnullParamFunction;
 import net.groboclown.retval.function.NonnullReturnFunction;
 import net.groboclown.retval.function.NonnullSupplier;
 import net.groboclown.retval.monitor.ObservedMonitor;
+import net.groboclown.retval.monitor.ObservedMonitorRegistrar;
 
 /**
  * Intended to be a version of the Ret* classes, with no error and a value.
@@ -56,7 +57,7 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
     MonitoredReturnValue(@Nullable final T value) {
         // The observable listeners are not passed to constructors.  This allows the developer
         // to know which specific place caused the value to be lost, not where it originated from.
-        this.listener = ObservedMonitor.getCheckedInstance().registerInstance(this);
+        this.listener = ObservedMonitorRegistrar.registerCheckedInstance(this);
         this.value = value;
     }
 
@@ -96,18 +97,24 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
     @Override
     @Nonnull
     public <V> MonitoredReturnValue<V> forwardProblems() {
+        // Prevent the duplicate errors by marking this as an observation.
+        this.listener.onObserved();
         throw new IllegalStateException("contains no problems");
     }
 
     @Override
     @Nonnull
     public <V> RetNullable<V> forwardNullableProblems() {
+        // Prevent the duplicate errors by marking this as an observation.
+        this.listener.onObserved();
         throw new IllegalStateException("contains no problems");
     }
 
     @Override
     @Nonnull
     public RetVoid forwardVoidProblems() {
+        // Prevent the duplicate errors by marking this as an observation.
+        this.listener.onObserved();
         throw new IllegalStateException("contains no problems");
     }
 
@@ -122,7 +129,8 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
             if (problems instanceof MonitoredReturnProblem) {
                 // Forward on the problems, which means mark this as observed.
                 this.listener.onObserved();
-                @SuppressWarnings("unchecked") final RetVal<T> ret =
+                @SuppressWarnings("unchecked")
+                final RetVal<T> ret =
                         ((MonitoredReturnProblem<T>) problems).forwardProblems();
                 return ret;
             }
@@ -146,7 +154,8 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
             if (problems instanceof MonitoredReturnProblem) {
                 // Forward on the problems, which means mark this as observed.
                 this.listener.onObserved();
-                @SuppressWarnings("unchecked") final RetNullable<T> ret =
+                @SuppressWarnings("unchecked")
+                final RetNullable<T> ret =
                         ((MonitoredReturnProblem<T>) problems).forwardNullableProblems();
                 return ret;
             }
@@ -159,34 +168,6 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
             }
         }
         return this;
-    }
-
-    @Nonnull
-    @Override
-    public <R> RetVal<R> then(@Nonnull final NonnullReturnFunction<T, RetVal<R>> func) {
-        this.listener.onObserved();
-        return func.apply(this.value);
-    }
-
-    @Nonnull
-    @Override
-    public <R> RetVal<R> map(@Nonnull final NonnullReturnFunction<T, R> func) {
-        this.listener.onObserved();
-        return RetGenerator.valOk(func.apply(this.value));
-    }
-
-    @Nonnull
-    @Override
-    public <R> RetNullable<R> thenNullable(@Nonnull final NonnullReturnFunction<T, RetNullable<R>> func) {
-        this.listener.onObserved();
-        return func.apply(this.value);
-    }
-
-    @Nonnull
-    @Override
-    public <R> RetNullable<R> mapNullable(@Nonnull final Function<T, R> func) {
-        this.listener.onObserved();
-        return RetGenerator.nullableOk(func.apply(this.value));
     }
 
     @Nonnull
@@ -205,20 +186,6 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
 
     @Nonnull
     @Override
-    public RetVoid thenVoid(@Nonnull final Consumer<T> consumer) {
-        consumer.accept(this.value);
-        return this;
-    }
-
-    @Nonnull
-    @Override
-    public RetVoid thenVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func) {
-        this.listener.onObserved();
-        return func.apply(this.value);
-    }
-
-    @Nonnull
-    @Override
     public RetNullable<T> asNullable() {
         // This should perform a null value check, but it *should* only be called from a
         // RetVoid value.
@@ -232,27 +199,11 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
         return func.apply(this.value);
     }
 
-    @Override
-    @Nonnull
-    public <R> RetVal<R> map(@Nonnull final NonnullFunction<T, R> func) {
-        this.listener.onObserved();
-        return RetGenerator.valOk(func.apply(this.value));
-    }
-
     @Nonnull
     @Override
-    public <R> RetNullable<R> thenNullable(
-            @Nonnull final NonnullFunction<T, RetNullable<R>> func
-    ) {
+    public <R> RetVal<R> then(@Nonnull final NonnullReturnFunction<T, RetVal<R>> func) {
         this.listener.onObserved();
         return func.apply(this.value);
-    }
-
-    @Nonnull
-    @Override
-    public <R> RetNullable<R> mapNullable(@Nonnull final NonnullParamFunction<T, R> func) {
-        this.listener.onObserved();
-        return RetGenerator.nullableOk(func.apply(this.value));
     }
 
     @Nonnull
@@ -271,9 +222,55 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
 
     @Nonnull
     @Override
-    public <R> RetNullable<R> thenNullable(@Nonnull final NonnullSupplier<RetNullable<R>> supplier) {
+    public <R> RetVal<R> map(@Nonnull final NonnullReturnFunction<T, R> func) {
+        this.listener.onObserved();
+        return RetGenerator.valOk(func.apply(this.value));
+    }
+
+    @Override
+    @Nonnull
+    public <R> RetVal<R> map(@Nonnull final NonnullFunction<T, R> func) {
+        this.listener.onObserved();
+        return RetGenerator.valOk(func.apply(this.value));
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> thenNullable(
+            @Nonnull final NonnullReturnFunction<T, RetNullable<R>> func) {
+        this.listener.onObserved();
+        return func.apply(this.value);
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> thenNullable(
+            @Nonnull final NonnullFunction<T, RetNullable<R>> func
+    ) {
+        this.listener.onObserved();
+        return func.apply(this.value);
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> thenNullable(
+            @Nonnull final NonnullSupplier<RetNullable<R>> supplier) {
         this.listener.onObserved();
         return supplier.get();
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> mapNullable(@Nonnull final NonnullParamFunction<T, R> func) {
+        this.listener.onObserved();
+        return RetGenerator.nullableOk(func.apply(this.value));
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> mapNullable(@Nonnull final Function<T, R> func) {
+        this.listener.onObserved();
+        return RetGenerator.nullableOk(func.apply(this.value));
     }
 
     @Nonnull
@@ -285,18 +282,6 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
 
     @Nonnull
     @Override
-    public RetVoid thenVoid(@Nonnull final NonnullSupplier<RetVoid> supplier) {
-        this.listener.onObserved();
-        return supplier.get();
-    }
-
-    /**
-     * Run the parameter, only if this instance has no problems.
-     *
-     * @param runner the runnable to execute if no problems exist
-     * @return this instance
-     */
-    @Nonnull
     public MonitoredReturnValue<T> thenRun(@Nonnull final Runnable runner) {
         // thenWrapped performs a "onChecked" call, and this method
         // returns "this", so this cannot use the wrapped helper.
@@ -306,13 +291,6 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
         return this;
     }
 
-    /**
-     * Run the consumer with the current value, only if this instance
-     * has no problems.
-     *
-     * @param consumer the consumer of this value to run if no problems exist
-     * @return this instance.
-     */
     @Nonnull
     @Override
     public MonitoredReturnValue<T> thenRun(@Nonnull final NonnullConsumer<T> consumer) {
@@ -325,6 +303,28 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
     }
 
     @Nonnull
+    @Override
+    public RetVoid thenVoid(@Nonnull final NonnullSupplier<RetVoid> supplier) {
+        this.listener.onObserved();
+        return supplier.get();
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid thenVoid(@Nonnull final Consumer<T> consumer) {
+        consumer.accept(this.value);
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid thenVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func) {
+        this.listener.onObserved();
+        return func.apply(this.value);
+    }
+
+    @Nonnull
+    @Override
     public RetVoid thenVoid(@Nonnull final NonnullConsumer<T> consumer) {
         // Because the returned object is supposed to be value-free, and we know it
         // has no problems, this same object can be returned.  This may introduce an
@@ -339,19 +339,8 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
         return this;
     }
 
-    /**
-     * Pass the value of this instance to the function, only if there are no problems.  Return
-     * a void version of this instance if there are problems with it, or the return value from
-     * the function.
-     *
-     * <p>This call will lose the contained value on return, so it's used to pass on the value
-     * to another object.
-     *
-     * @param func consumer of this value.
-     * @return if this instance has problems, then the problems are returned, otherwise the
-     *      return value of the function is returned.
-     */
     @Nonnull
+    @Override
     public RetVoid thenVoid(@Nonnull final NonnullFunction<T, RetVoid> func) {
         this.listener.onObserved();
         return func.apply(this.value);
@@ -392,7 +381,10 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
     @Nonnull
     @Override
     public Collection<Problem> validProblems() {
-        // Just like result() doesn't trigger an observation, so this one doesn't either.
+        // validProblems will always mark the value as observed.  In the case
+        // where no problems exist, a programmer exception is raised, and forcing
+        // the observation prevents a double error.
+        this.listener.onObserved();
         throw new IllegalStateException("contains no problems");
     }
 

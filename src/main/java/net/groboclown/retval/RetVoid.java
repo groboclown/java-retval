@@ -35,7 +35,8 @@ public interface RetVoid extends ProblemContainer {
 
     /**
      * Constructs a {@link RetVoid} instance with the collections of problems.
-     * This is optimized to reduce the memory load where easy.
+     * This is optimized to reduce the memory load where easy.  If the collection of problems
+     * has no values, then an OK value is returned instead.
      *
      * @param problemSet first collection of problems
      * @param problemSets vararg optional problems that should be included in this object.
@@ -47,7 +48,7 @@ public interface RetVoid extends ProblemContainer {
             @Nonnull final Collection<Problem> problemSet,
             @Nonnull final Collection<Problem>... problemSets
     ) {
-        return RetGenerator.voidFromProblem(problemSet, problemSets);
+        return RetGenerator.voidFromProblem(Ret.joinProblemSets(problemSet, problemSets));
     }
 
     /**
@@ -63,7 +64,7 @@ public interface RetVoid extends ProblemContainer {
     static RetVoid fromProblem(
             @Nullable final Problem problem,
             final Problem... problems) {
-        return RetGenerator.voidFromProblem(problem, problems);
+        return RetGenerator.voidFromProblem(Ret.joinProblems(problem, problems));
     }
 
     /**
@@ -81,7 +82,7 @@ public interface RetVoid extends ProblemContainer {
             @Nonnull final Collection<ProblemContainer> retSet,
             @Nonnull final Collection<ProblemContainer>... retSets
     ) {
-        return RetGenerator.voidFromProblems(retSet, retSets);
+        return RetGenerator.voidFromProblem(Ret.joinRetProblemSets(retSet, retSets));
     }
 
     /**
@@ -98,7 +99,7 @@ public interface RetVoid extends ProblemContainer {
             @Nullable final ProblemContainer ret,
             @Nonnull final ProblemContainer... rets
     ) {
-        return RetGenerator.voidFromProblems(ret, rets);
+        return RetGenerator.voidFromProblem(Ret.joinRetProblems(ret, rets));
     }
 
     /**

@@ -358,7 +358,6 @@ class RetNullableStaticTest {
     @BeforeEach
     void beforeEach() {
         this.monitor = MockProblemMonitor.setup();
-        // Ensure RetVoid.ok() returns separate values.
         this.monitor.traceEnabled = true;
     }
 

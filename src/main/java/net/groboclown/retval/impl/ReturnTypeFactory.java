@@ -84,5 +84,5 @@ public interface ReturnTypeFactory {
      * @return a RetVoid with all the given problems.
      */
     @Nonnull
-    RetVoid voidFromProblems(@Nonnull final List<Problem> problems);
+    RetVoid createVoidFromProblems(@Nonnull final List<Problem> problems);
 }

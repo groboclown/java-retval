@@ -93,7 +93,7 @@ public interface RetVal<T> extends ProblemContainer {
             @Nonnull final Problem problem,
             @Nonnull final Problem... problems
     ) {
-        return RetGenerator.valFromProblem(problem, problems);
+        return RetGenerator.valFromProblem(Ret.joinProblems(problem, problems));
     }
 
     /**
@@ -112,7 +112,7 @@ public interface RetVal<T> extends ProblemContainer {
             @Nonnull final Collection<Problem> problem,
             @Nonnull final Collection<Problem>... problems
     ) {
-        return RetGenerator.valFromProblem(problem, problems);
+        return RetGenerator.valFromProblem(Ret.joinProblemSets(problem, problems));
     }
 
     /**
@@ -136,7 +136,7 @@ public interface RetVal<T> extends ProblemContainer {
         // problems.  However, this form of the constructor requires at least one problem, and
         // the standard use case is for returning a known bad state, so any values are
         // considered to be okay to lose.
-        return RetGenerator.valFromProblems(problem, problems);
+        return RetGenerator.valFromProblem(Ret.joinRetProblems(problem, problems));
     }
 
     /**
@@ -158,7 +158,7 @@ public interface RetVal<T> extends ProblemContainer {
             @Nonnull final Collection<ProblemContainer> problem,
             @Nonnull final Collection<ProblemContainer>... problems
     ) {
-        return RetGenerator.valFromProblems(problem, problems);
+        return RetGenerator.valFromProblem(Ret.joinRetProblemSets(problem, problems));
     }
 
     /**

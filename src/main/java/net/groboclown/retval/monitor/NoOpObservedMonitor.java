@@ -6,7 +6,7 @@ import javax.annotation.Nonnull;
 /**
  * A monitor that performs no actual monitoring.
  */
-public class NoOpObservedMonitor<T> extends ObservedMonitor<T> {
+public class NoOpObservedMonitor<T> implements ObservedMonitor<T> {
     public static final NoOpListener LISTENER = new NoOpListener();
     private static final NoOpObservedMonitor<Object> INSTANCE = new NoOpObservedMonitor<>();
 

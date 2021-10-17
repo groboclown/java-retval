@@ -6,7 +6,7 @@ import java.util.List;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
-class TestableObservedMonitor<T> extends ObservedMonitor<T> {
+class TestableObservedMonitor<T> implements ObservedMonitor<T> {
     private final List<TestableListener<?>> listeners = new ArrayList<>();
 
     @Nonnull

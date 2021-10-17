@@ -1,4 +1,5 @@
-package net.groboclown.retval.env;// Released under the MIT License.
+// Released under the MIT License.
+package net.groboclown.retval.env;
 
 import java.util.Map;
 import net.groboclown.retval.ProblemContainer;

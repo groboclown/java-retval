@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 /**
  * Maintains information about objects that need to be checked in a phantom reference cleaner.
  */
-public class DebugObservedMonitor<T> extends ObservedMonitor<T> {
+public class DebugObservedMonitor<T> implements ObservedMonitor<T> {
     private final NotCompletedListener listener;
     private final Cleaner cleaner = Cleaner.create();
     private final String name;

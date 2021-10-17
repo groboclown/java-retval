@@ -209,6 +209,7 @@ class RetVoidStaticTest {
     @BeforeEach
     void beforeEach() {
         this.monitor = MockProblemMonitor.setup();
+        this.monitor.traceEnabled = true;
     }
 
     @AfterEach
