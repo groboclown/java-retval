@@ -17,7 +17,7 @@ jobs:
         run: ./gradlew clean build
 
       - name: assemble code-coverage report
-        run: "mkdir -p bulid/distributions && ( cd build/reports/jacoco/test/html && zip -9r ../../../../distributions/jacoco-report.zip * )"
+        run: "mkdir -p build/distributions && ( cd build/reports/jacoco/test/html && zip -9r ../../../../distributions/jacoco-report.zip * )"
       - name: upload code coverage results
         uses: actions/upload-artifact@v2
         with:
