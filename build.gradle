@@ -2,9 +2,13 @@ plugins {
     id 'java-library'
     id 'checkstyle'
     id 'jacoco'
+    id 'maven-publish'
+    id 'signing'
 }
 
 version = '2.0.0'
+group = 'net.groboclown'
+
 
 repositories {
     mavenCentral()
@@ -47,29 +51,64 @@ checkstyle {
     toolVersion "9.0"
 }
 
-
-task zipJavadoc(type: Zip) {
-    dependsOn javadoc
-
-    archiveClassifier = 'javadoc'
-
-    from javadoc.destinationDir
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
-task zipSource(type: Zip) {
-    archiveClassifier = 'source'
-
-    from("${projectDir}/src/main/java")
-    from("${projectDir}/src/main/resources")
+javadoc {
+    options.addBooleanOption('html5', true)
 }
 
-task jarTests(type: Zip) {
-    archiveClassifier = 'tests'
 
-    from("${projectDir}/src/test/java")
-    from("${projectDir}/src/test/resources")
+publishing {
+    publications {
+        official(MavenPublication) {
+            from components.java
+
+            pom {
+                name = 'retval'
+                description = 'Combine error messages and return values in a single return object, without using Exceptions.'
+                url = "https://groboclown.github.io/java-retval/"
+                licenses {
+                    license {
+                        name = "MIT License"
+                        url = "https://mit-license.org/"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "groboclown"
+                        name = "Groboclown"
+                        email = "matt@groboclown.com"
+                    }
+                }
+                scm {
+                    connection = "scm:git:https://github.com/groboclown/java-retval.git"
+                    developerConnection = "scm:git:git@github.com:groboclown/java-retval.git"
+                    url = "https://github.com/groboclown/java-retval"
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            setUrl("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials(PasswordCredentials) {
+                username = ossrhUsername
+                password = ossrhPassword
+            }
+        }
+    }
 }
 
-assemble {
-    dependsOn zipJavadoc, zipSource, jarTests
+
+signing {
+    // See
+    // https://github.com/gradle/gradle/issues/16597
+    useGpgCmd()
+    sign publishing.publications.official
 }

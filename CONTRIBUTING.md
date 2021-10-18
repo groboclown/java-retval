@@ -45,6 +45,15 @@ For the person performing the release:
    3. Update the [docs/index.md]() file with the new version - the "importing into your project" guide and adding a new link in the JavaDoc list.
    5. Add, commit, and push.
 3. Merge the `dev` branch into `main`, then commit and push.  Make sure GitHub activity builds are good.
-4. Locally run the build out of the `main` branch (`./gradlew clean build`).  *TODO setup the activity to publish the jar*
+4. Locally run the build out of the `main` branch (`./gradlew clean build`).
 5. Publish the jar as a Github release artifact.
 6. Publish the jar to the maven repo.
+   ```bash
+   ./gradlew publish \
+       -Psigning.gnupg.keyName=(gpg short key ID) \
+       -Psigning.gnupg.executable=gpg \
+       -Psigning.gnupg.passphrase=(gpg key passphrase) \
+       -PossrhUsername=(OSSRH username) \
+       -PossrhPassword=(OSSRH password)
+   ```
+   ... or use a `GRADLE_USER_HOME` gradle.properties containing those `-P(key)=(value)` settings.
