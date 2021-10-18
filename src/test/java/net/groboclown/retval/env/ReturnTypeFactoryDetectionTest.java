@@ -1,6 +1,7 @@
 // Released under the MIT License.
 package net.groboclown.retval.env;
 
+import java.util.HashMap;
 import java.util.Map;
 import net.groboclown.retval.impl.MonitoredFactory;
 import net.groboclown.retval.impl.ReturnTypeFactory;
@@ -43,7 +44,7 @@ class ReturnTypeFactoryDetectionTest {
 
     @BeforeEach
     void beforeEach() {
-        this.origEnv = Map.copyOf(SystemEnvUtil.getSettings());
+        this.origEnv = new HashMap<>(SystemEnvUtil.getSettings());
     }
 
     @AfterEach

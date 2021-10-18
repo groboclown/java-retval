@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nonnull;
 import net.groboclown.retval.function.NonnullReturnFunction;
+import net.groboclown.retval.impl.CollectionUtil;
 
 /**
  * Allows for accumulating a list of values, some of which may have errors associated with them.
@@ -242,14 +243,14 @@ public class ValueAccumulator<T> implements ProblemContainer {
     @Nonnull
     @Override
     public Collection<Problem> anyProblems() {
-        return List.copyOf(this.problems);
+        return CollectionUtil.copyNonNullValues(this.problems);
     }
 
     @Nonnull
     @Override
     public Collection<Problem> validProblems() {
         Ret.enforceHasProblems(this.problems);
-        return List.copyOf(this.problems);
+        return CollectionUtil.copyNonNullValues(this.problems);
     }
 
     @Nonnull

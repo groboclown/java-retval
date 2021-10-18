@@ -1,6 +1,7 @@
 // Released under the MIT License.
 package net.groboclown.retval.env;
 
+import java.util.HashMap;
 import java.util.Map;
 import net.groboclown.retval.ProblemContainer;
 import net.groboclown.retval.monitor.DebugObservedMonitor;
@@ -33,7 +34,7 @@ class ObservedMonitorDetectionTest {
 
     @BeforeEach
     void beforeEach() {
-        this.env = Map.copyOf(SystemEnvUtil.getSettings());
+        this.env = new HashMap<>(SystemEnvUtil.getSettings());
     }
 
     @AfterEach

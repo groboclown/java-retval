@@ -2,6 +2,7 @@
 package net.groboclown.retval.contract;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -1437,7 +1438,7 @@ public abstract class MonitoredContract {
     protected void assertNeverObserved(@Nonnull final ProblemContainer... values) {
         // Allow for duplicates and ordering to not matter.
 
-        final Set<ProblemContainer> neverObserved = Set.copyOf(this.monitor.getNeverObserved());
+        final Set<ProblemContainer> neverObserved = new HashSet<>(this.monitor.getNeverObserved());
         final Set<ProblemContainer> expected = Set.of(values);
         assertEquals(
                 expected,

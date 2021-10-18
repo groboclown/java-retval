@@ -55,7 +55,7 @@ public class DebugObservedMonitor<T> implements ObservedMonitor<T> {
             this.logger = logger;
             this.monitorName = monitorName;
             this.objectStr = objectStr;
-            this.stack = mungedStack(4);
+            this.stack = mungedStack();
         }
 
         void close() {
@@ -93,11 +93,27 @@ public class DebugObservedMonitor<T> implements ObservedMonitor<T> {
         }
     }
 
-    private static StackTraceElement[] mungedStack(final int remove) {
+
+    private static final String REMOVE_AFTER_CLASSNAME = DebugObservedMonitor.class.getName();
+    private static final String REMOVE_AFTER_METHOD_NAME = "registerInstance";
+
+    private static StackTraceElement[] mungedStack() {
         final StackTraceElement[] currentStack = new Exception().fillInStackTrace().getStackTrace();
-        final StackTraceElement[] ret = new StackTraceElement[currentStack.length - remove];
+
+        int remove = 0;
         // item [0] is the call stack place that created the exception, which is this
         // method.
+        // Note: "- 1" here because the remove index will be the position in the stack after
+        // the value found.
+        for (int i = 0; i < currentStack.length - 1; i++) {
+            if (REMOVE_AFTER_CLASSNAME.equals(currentStack[i].getClassName())
+                    && REMOVE_AFTER_METHOD_NAME.equals(currentStack[i].getMethodName())) {
+                remove = i + 1;
+                break;
+            }
+        }
+
+        final StackTraceElement[] ret = new StackTraceElement[currentStack.length - remove];
         System.arraycopy(currentStack, remove, ret, 0, ret.length);
         return ret;
     }

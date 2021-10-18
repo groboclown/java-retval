@@ -2,8 +2,9 @@
 package net.groboclown.retval.usecases.examples;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import net.groboclown.retval.Ret;
@@ -22,7 +23,8 @@ class FileUtilCloser {
 
     static RetVal<Reader> openFile(File file) {
         try {
-            return RetVal.ok(new FileReader(file, StandardCharsets.UTF_8));
+            return RetVal.ok(
+                    new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
         } catch (IOException e) {
             return RetVal.fromProblem(FileProblem.from(file, e));
         }

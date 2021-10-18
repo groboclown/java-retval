@@ -3,6 +3,7 @@ package net.groboclown.retval.usecases.configuration;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -31,7 +32,7 @@ class ConfigurationWriterTest {
 
         assertEquals(
                 Map.of("projects", ""),
-                Map.copyOf(res.result())
+                new HashMap<>(res.result())
         );
     }
 
@@ -64,7 +65,7 @@ class ConfigurationWriterTest {
         assertEquals(List.of(), res.anyProblems());
 
         assertEquals(
-                Map.copyOf(res.result()),
+                new HashMap<>(res.result()),
                 Map.ofEntries(
                         Map.entry("projects", "p1,p2"),
                         Map.entry("project.p1.name", "p 1"),

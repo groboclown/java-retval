@@ -6,10 +6,11 @@ Library for Java 9+ programs to combine error messages and return values in a si
 # Topics
 
 * JavaDoc:
-  * [2.0.0](2.0.0)
-  * [1.0.0](1.0.0)
-* [Main Project Page](https://github.com/groboclown/java-retval)
-* [Known Issues](https://github.com/groboclown/java-retval/issues)
+  * [2.0](2.0)
+  * [1.0](1.0)
+* External Links:
+  * [Main Project Page](https://github.com/groboclown/java-retval)
+  * [Known Issues](https://github.com/groboclown/java-retval/issues)
 * User Guide
   * [Introduction for Users](#introduction-for-users)
   * [Importing into Your Project](#importing-into-your-project)
@@ -61,7 +62,7 @@ Gradle projects will need to add the jar to the dependencies section:
 
 ```groovy
 dependencies {
-  implementation 'net.groboclown:retval:2.0.0'
+  implementation 'net.groboclown:retval:2.0.1'
 }
 ```
 
@@ -71,7 +72,7 @@ Maven projects will need to include the runtime dependency:
    <dependency>
       <groupId>net.groboclown</groupId>
       <artifactId>retval</artifactId>
-      <version>2.0.0</version>
+      <version>2.0.1</version>
       <scope>runtime</scope>
     </dependency>
 ```
@@ -210,10 +211,12 @@ The [`usecases`](https://github.com/groboclown/java-retval/tree/dev/src/test/jav
 Some situations may arise where the returned value must be closed, such as with an I/O type.  The simple approach is to require the closable value be passed as an argument to the creator.
 
 <!-- src/test/java/net/groboclown/retval/usecases/examples/FileUtil.java -->
+
 ```java
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
@@ -221,7 +224,7 @@ import java.util.function.Function;
 class FileUtil {
   // One approach, 
   static <T> RetVal<T> processContents(File file, Function<String, T> func) {
-    try (FileReader reader = new FileReader(file, StandardCharsets.UTF_8)) {
+    try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
       return RetVal.ok(func.apply(readFully(file.getPath(), reader)));
     } catch (IOException e) {
       return RetVal.fromProblem(FileProblem.from(file, e));
@@ -237,34 +240,37 @@ class FileUtil {
 The `retval` library also includes helper functions to correctly and fully protect your application against incorrect close semantics that can easily creep into your program.
 
 <!-- src/test/java/net/groboclown/retval/usecases/examples/FileUtilCloser.java -->
+
 ```java
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 
 class FileUtilCloser {
-    static <T> RetVal<T> processContentsCloser(File file, NonnullFunction<String, T> func) {
-        return openFile(file)
-                .then((reader) ->
+  static <T> RetVal<T> processContentsCloser(File file, NonnullFunction<String, T> func) {
+    return openFile(file)
+            .then((reader) ->
                     Ret.closeWith(reader, (r) ->
-                        readFullyWrapped(file.getPath(), reader)))
-                .map(func);
-    }
+                            readFullyWrapped(file.getPath(), reader)))
+            .map(func);
+  }
 
-    static RetVal<Reader> openFile(File file) {
-        try {
-            return RetVal.ok(new FileReader(file, StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            return RetVal.fromProblem(FileProblem.from(file, e));
-        }
+  static RetVal<Reader> openFile(File file) {
+    try {
+      return RetVal.ok(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+    } catch (IOException e) {
+      return RetVal.fromProblem(FileProblem.from(file, e));
     }
+  }
 
-    static RetVal<String> readFullyWrapped(final String sourceName, final Reader reader)
-            throws IOException {
-        // ...
-    }
+  static RetVal<String> readFullyWrapped(final String sourceName, final Reader reader)
+          throws IOException {
+    // ...
+  }
 }
 ```
 

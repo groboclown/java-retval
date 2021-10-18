@@ -1,6 +1,21 @@
 # java-retval library Change Log
 
 
+## 2.0.1
+
+Bug Fixes:
+
+* Changed the build to compile the class files as JDK 9 classes.  This required some under-the-cover Java API usage changes, but the code itself is still compatible with 2.0.0.
+* Improved the debug monitor stack reporting to be compatible with more JDK implementations.  It used to have a fixed stack removal plan, but now performs a deeper inspection.
+
+
+Documentation Changes:
+
+* Clarified the `ReturnTypeFactory` documentation to describe the requirements for the input parameter in the create-with-problem calls.
+* Moved from the official size from including per-patch release JavaDocs to a per minor / major versions.
+
+
+
 ## 2.0.0
 
 Version 2 of the library supports API *compile compatible* end-user portions of the library.  Any standard use of the API should continue to work, but may need to be recompiled.

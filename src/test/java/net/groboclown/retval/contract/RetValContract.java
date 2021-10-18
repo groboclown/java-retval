@@ -2,6 +2,8 @@
 package net.groboclown.retval.contract;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nonnull;
 import net.groboclown.retval.Problem;
@@ -49,7 +51,7 @@ public abstract class RetValContract {
     @Test
     void asOptional_problem() {
         final RetVal<Object> res = createForValProblems(List.of(LocalizedProblem.from("x")));
-        assertTrue(res.asOptional().isEmpty());
+        assertFalse(res.asOptional().isPresent());
     }
 
     @Test
@@ -585,7 +587,9 @@ public abstract class RetValContract {
         final RetVal<Long> res = createForVal(Long.MAX_VALUE);
 
         // Call and check result
-        assertEquals(List.of(), res.anyProblems());
+        final Collection<Problem> problems = res.anyProblems();
+        assertEquals(List.of(), problems);
+        assertUnmodifiable(problems);
     }
 
     @Test
@@ -594,7 +598,9 @@ public abstract class RetValContract {
         final RetVal<Long> res = createForValProblems(List.of(problem));
 
         // Call and check result
-        assertEquals(List.of(problem), res.anyProblems());
+        final Collection<Problem> problems = res.anyProblems();
+        assertEquals(List.of(problem), problems);
+        assertUnmodifiable(problems);
     }
 
     @Test
@@ -616,7 +622,9 @@ public abstract class RetValContract {
         final RetVal<Long> res = createForValProblems(List.of(problem));
 
         // Call and check result
-        assertEquals(List.of(problem), res.validProblems());
+        final Collection<Problem> problems = res.validProblems();
+        assertEquals(List.of(problem), problems);
+        assertUnmodifiable(problems);
     }
 
     @Test
@@ -688,5 +696,25 @@ public abstract class RetValContract {
                         LocalizedProblem.from("def")
                 )).toString()
         );
+    }
+
+
+    void assertUnmodifiable(@Nonnull final Collection<Problem> problems) {
+        try {
+            problems.add(LocalizedProblem.from("no add allowed"));
+            fail("collection allows add");
+        } catch (final UnsupportedOperationException e) {
+            // pass
+        }
+        if (! problems.isEmpty()) {
+            // Remove operations will sometimes not throw the exception if there's nothing to
+            // remove.
+            try {
+                problems.retainAll(Collections.emptyList());
+                fail("collection allows remove");
+            } catch (final UnsupportedOperationException e) {
+                // pass
+            }
+        }
     }
 }

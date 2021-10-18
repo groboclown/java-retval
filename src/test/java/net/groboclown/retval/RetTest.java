@@ -191,7 +191,7 @@ class RetTest {
         final RetVal<String> val = Ret.closeWith(closer, (x) -> ret);
         // closeWith should have passed the monitor state to the return value.
         assertEquals(List.of(val), this.monitor.getNeverObserved());
-        final List<Problem> problems = List.copyOf(val.anyProblems());
+        final List<Problem> problems = new ArrayList<>(val.anyProblems());
         assertEquals(1, problems.size());
         assertEquals(UnhandledExceptionProblem.class, problems.get(0).getClass());
         assertEquals(ex, ((UnhandledExceptionProblem) problems.get(0)).getSourceException());
@@ -208,7 +208,7 @@ class RetTest {
         final RetVal<String> val = Ret.closeWith(closer, (x) -> ret);
         // closeWith should have passed the monitor state to the return value.
         assertEquals(List.of(val), this.monitor.getNeverObserved());
-        final List<Problem> problems = List.copyOf(val.anyProblems());
+        final List<Problem> problems = new ArrayList<>(val.anyProblems());
         assertEquals(2, problems.size());
         assertSame(problem, problems.get(0));
         assertEquals(UnhandledExceptionProblem.class, problems.get(1).getClass());
@@ -226,7 +226,7 @@ class RetTest {
             throw funcEx;
         });
         assertEquals(List.of(val), this.monitor.getNeverObserved());
-        final List<Problem> problems = List.copyOf(val.anyProblems());
+        final List<Problem> problems = new ArrayList<>(val.anyProblems());
         assertEquals(1, problems.size());
         assertEquals(UnhandledExceptionProblem.class, problems.get(0).getClass());
         assertEquals(funcEx, ((UnhandledExceptionProblem) problems.get(0)).getSourceException());
@@ -279,7 +279,7 @@ class RetTest {
             throw funcEx;
         });
         assertEquals(List.of(val), this.monitor.getNeverObserved());
-        final List<Problem> problems = List.copyOf(val.anyProblems());
+        final List<Problem> problems = new ArrayList<>(val.anyProblems());
         assertEquals(1, problems.size());
         assertEquals(UnhandledExceptionProblem.class, problems.get(0).getClass());
         assertEquals(funcEx, ((UnhandledExceptionProblem) problems.get(0)).getSourceException());
@@ -315,7 +315,7 @@ class RetTest {
             throw ex;
         });
         assertEquals(List.of(val), this.monitor.getNeverObserved());
-        final List<Problem> problems = List.copyOf(val.anyProblems());
+        final List<Problem> problems = new ArrayList<>(val.anyProblems());
         assertEquals(1, problems.size());
         assertEquals(UnhandledExceptionProblem.class, problems.get(0).getClass());
         assertEquals(ex, ((UnhandledExceptionProblem) problems.get(0)).getSourceException());
@@ -352,7 +352,7 @@ class RetTest {
             throw ex;
         });
         assertEquals(List.of(val), this.monitor.getNeverObserved());
-        final List<Problem> problems = List.copyOf(val.anyProblems());
+        final List<Problem> problems = new ArrayList<>(val.anyProblems());
         assertEquals(1, problems.size());
         assertEquals(UnhandledExceptionProblem.class, problems.get(0).getClass());
         assertEquals(ex, ((UnhandledExceptionProblem) problems.get(0)).getSourceException());

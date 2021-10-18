@@ -2,6 +2,8 @@
 package net.groboclown.retval.contract;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -32,6 +34,14 @@ public abstract class RetNullableContract {
     @Nonnull
     protected abstract <T> RetNullable<T> createForNullable(@Nullable T value);
 
+    /**
+     * This should be the same underlying API usage as the factory requires.  The contract test
+     * will ensure the correct invocation such that it conforms to the factory input requirements.
+     *
+     * @param problems list of problems, which is guaranteed to conform to the factory requirements.
+     * @param <T> type of the nullable
+     * @return the nullable type under contract test
+     */
     @Nonnull
     protected abstract <T> RetNullable<T> createForNullableProblems(
             @Nonnull List<Problem> problems);
@@ -59,7 +69,7 @@ public abstract class RetNullableContract {
     public void asOptional_problem() {
         final RetNullable<Object> res = createForNullableProblems(
                 List.of(LocalizedProblem.from("x")));
-        assertTrue(res.asOptional().isEmpty());
+        assertFalse(res.asOptional().isPresent());
     }
 
     @Test
@@ -72,7 +82,7 @@ public abstract class RetNullableContract {
     @Test
     void asOptional_ok_null() {
         final RetNullable<String> res = createForNullable(null);
-        assertTrue(res.asOptional().isEmpty());
+        assertFalse(res.asOptional().isPresent());
     }
 
     @Test
@@ -98,7 +108,7 @@ public abstract class RetNullableContract {
     @Test
     void requireOptional_ok_null() {
         final RetNullable<String> res = createForNullable(null);
-        assertTrue(res.requireOptional().isEmpty());
+        assertFalse(res.requireOptional().isPresent());
     }
 
     @Test
@@ -651,7 +661,10 @@ public abstract class RetNullableContract {
         final RetNullable<Long> res = createForNullable(Long.MAX_VALUE);
 
         // Call and check result
-        assertEquals(List.of(), res.anyProblems());
+        final Collection<Problem> problems = res.anyProblems();
+        assertEquals(List.of(), problems);
+        assertUnmodifiable(problems);
+
     }
 
     @Test
@@ -661,7 +674,9 @@ public abstract class RetNullableContract {
         final RetNullable<Long> res = createForNullableProblems(List.of(problem));
 
         // Call and check result
-        assertEquals(List.of(problem), res.anyProblems());
+        final Collection<Problem> problems = res.anyProblems();
+        assertEquals(List.of(problem), problems);
+        assertUnmodifiable(problems);
     }
 
     @Test
@@ -685,20 +700,10 @@ public abstract class RetNullableContract {
         final RetNullable<Long> res = createForNullableProblems(List.of(problem));
 
         // Call and check result
-        assertEquals(List.of(problem), res.validProblems());
+        final Collection<Problem> problems = res.validProblems();
+        assertEquals(List.of(problem), problems);
 
-        try {
-            res.validProblems().add(problem);
-            fail("Valid Problems did not return an immutable list");
-        } catch (final UnsupportedOperationException e) {
-            // pass
-        }
-        try {
-            res.validProblems().remove(problem);
-            fail("Valid Problems did not return an immutable list");
-        } catch (final UnsupportedOperationException e) {
-            // pass
-        }
+        assertUnmodifiable(problems);
     }
 
     @Test
@@ -772,5 +777,25 @@ public abstract class RetNullableContract {
                         LocalizedProblem.from("def")
                 )).toString()
         );
+    }
+
+
+    void assertUnmodifiable(@Nonnull final Collection<Problem> problems) {
+        try {
+            problems.add(LocalizedProblem.from("no add allowed"));
+            fail("collection allows add");
+        } catch (final UnsupportedOperationException e) {
+            // pass
+        }
+        if (! problems.isEmpty()) {
+            // Remove operations will sometimes not throw the exception if there's nothing to
+            // remove.
+            try {
+                problems.retainAll(Collections.emptyList());
+                fail("collection allows remove");
+            } catch (final UnsupportedOperationException e) {
+                // pass
+            }
+        }
     }
 }

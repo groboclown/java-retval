@@ -11,6 +11,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.groboclown.retval.function.NonnullConsumer;
 import net.groboclown.retval.function.NonnullSupplier;
+import net.groboclown.retval.impl.CollectionUtil;
 
 /**
  * Collects problems from multiple requests to gather data.
@@ -361,14 +362,14 @@ public class ProblemCollector implements ProblemContainer {
     @Nonnull
     @Override
     public Collection<Problem> anyProblems() {
-        return List.copyOf(this.problems);
+        return CollectionUtil.copyNonNullValues(this.problems);
     }
 
     @Nonnull
     @Override
     public Collection<Problem> validProblems() {
         Ret.enforceHasProblems(this.problems);
-        return List.copyOf(this.problems);
+        return CollectionUtil.copyNonNullValues(this.problems);
     }
 
     @Nonnull

@@ -21,7 +21,7 @@ class ValueAccumulatorTest {
     void from_empty() {
         final ValueAccumulator<Object> accumulator = ValueAccumulator.from();
         assertEquals(List.of(), accumulator.anyProblems());
-        assertEquals(List.of(), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of(), new ArrayList<>(accumulator.getValues()));
     }
 
     @Test
@@ -29,7 +29,7 @@ class ValueAccumulatorTest {
         final ValueAccumulator<String> accumulator = ValueAccumulator.from(RetVal.ok("x"));
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertEquals(List.of(), accumulator.anyProblems());
-        assertEquals(List.of("x"), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of("x"), new ArrayList<>(accumulator.getValues()));
     }
 
     @Test
@@ -39,7 +39,7 @@ class ValueAccumulatorTest {
                 ValueAccumulator.from(RetVal.fromProblem(problem));
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertEquals(List.of(problem), accumulator.anyProblems());
-        assertEquals(List.of(), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of(), new ArrayList<>(accumulator.getValues()));
     }
 
     @Test
@@ -47,7 +47,7 @@ class ValueAccumulatorTest {
         final ValueAccumulator<String> accumulator = ValueAccumulator.from(RetNullable.ok("x"));
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertEquals(List.of(), accumulator.anyProblems());
-        assertEquals(List.of("x"), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of("x"), new ArrayList<>(accumulator.getValues()));
     }
 
     @Test
@@ -67,7 +67,7 @@ class ValueAccumulatorTest {
                 ValueAccumulator.from(RetNullable.fromProblem(problem));
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertEquals(List.of(problem), accumulator.anyProblems());
-        assertEquals(List.of(), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of(), new ArrayList<>(accumulator.getValues()));
     }
 
     @Test
@@ -78,7 +78,7 @@ class ValueAccumulatorTest {
                 ValueAccumulator.from(problem1, problem2);
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertEquals(List.of(problem1, problem2), accumulator.anyProblems());
-        assertEquals(List.of(), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of(), new ArrayList<>(accumulator.getValues()));
     }
 
     @Test
@@ -89,7 +89,7 @@ class ValueAccumulatorTest {
         assertEquals(List.of(), this.monitor.getNeverObserved());
         accumulator.with(problem1, problem2);
         assertEquals(List.of(problem1, problem2), accumulator.anyProblems());
-        assertEquals(List.of("a"), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of("a"), new ArrayList<>(accumulator.getValues()));
     }
 
     @Test
@@ -102,7 +102,7 @@ class ValueAccumulatorTest {
                 accumulator.with(List.of(problem1), Arrays.asList(problem2, null));
         assertSame(ret, accumulator);
         assertEquals(List.of(problem1, problem2), accumulator.anyProblems());
-        assertEquals(List.of("a"), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of("a"), new ArrayList<>(accumulator.getValues()));
     }
 
     @Test
@@ -117,7 +117,7 @@ class ValueAccumulatorTest {
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertSame(ret, accumulator);
         assertEquals(List.of("a", "b", "c"), calledWith);
-        assertEquals(calledWith, List.copyOf(accumulator.getValues()));
+        assertEquals(calledWith, new ArrayList<>(accumulator.getValues()));
         assertEquals(List.of(), accumulator.anyProblems());
     }
 
@@ -136,7 +136,7 @@ class ValueAccumulatorTest {
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertSame(ret, accumulator);
         assertEquals(List.of("a", "b", "c"), calledWith);
-        assertEquals(List.of(), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of(), new ArrayList<>(accumulator.getValues()));
         assertEquals("x;a;b;c", accumulator.debugProblems(";"));
     }
 
@@ -152,7 +152,7 @@ class ValueAccumulatorTest {
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertSame(ret, accumulator);
         assertEquals(List.of("a", "b", "c"), calledWith);
-        assertEquals(calledWith, List.copyOf(accumulator.getValues()));
+        assertEquals(calledWith, new ArrayList<>(accumulator.getValues()));
         assertEquals(List.of(), accumulator.anyProblems());
     }
 
@@ -171,7 +171,7 @@ class ValueAccumulatorTest {
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertSame(ret, accumulator);
         assertEquals(List.of("a", "b", "c"), calledWith);
-        assertEquals(List.of(), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of(), new ArrayList<>(accumulator.getValues()));
         assertEquals("x;a;b;c", accumulator.debugProblems(";"));
     }
 
@@ -185,7 +185,7 @@ class ValueAccumulatorTest {
                 });
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertSame(ret, accumulator);
-        assertEquals(List.of(), List.copyOf(accumulator.getValues()));
+        assertEquals(List.of(), new ArrayList<>(accumulator.getValues()));
         assertEquals(List.of(problem), accumulator.anyProblems());
     }
 
@@ -227,7 +227,7 @@ class ValueAccumulatorTest {
                 .asRetVal();
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertEquals(List.of(), res.anyProblems());
-        assertEquals(List.of("x", "y"), List.copyOf(res.result()));
+        assertEquals(List.of("x", "y"), new ArrayList<>(res.result()));
     }
 
     @Test
@@ -242,7 +242,7 @@ class ValueAccumulatorTest {
         // Warnings are not observed
         assertEquals(List.of(), this.monitor.getNeverObserved());
         assertEquals(List.of(problem), res.anyProblems());
-        assertEquals(List.of("x", "y"), List.copyOf(res.getValue()));
+        assertEquals(List.of("x", "y"), new ArrayList<>(res.getValue()));
     }
 
     @Test

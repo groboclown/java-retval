@@ -12,6 +12,8 @@ import net.groboclown.retval.RetVal;
 import net.groboclown.retval.RetVoid;
 import net.groboclown.retval.env.ReturnTypeFactoryDetection;
 
+import static net.groboclown.retval.impl.CollectionUtil.copyNonNullValues;
+
 
 /**
  * Central handler for creating Ret* instances.
@@ -53,13 +55,12 @@ public class RetGenerator {
     public static <T> RetNullable<T> nullableFromProblem(
             @Nonnull final Collection<Problem> problems
     ) {
-        if (problems.isEmpty()) {
+        final List<Problem> clonedProblems = copyNonNullValues(problems);
+        if (clonedProblems.isEmpty()) {
             throw new IllegalArgumentException(
                     "Problem return objects must have at least 1 problem");
         }
-        // Need to create a copy of the problems.  Note that copyOf has an internal
-        // no-null value check.
-        return INSTANCE.createNullableFromProblems(List.copyOf(problems));
+        return INSTANCE.createNullableFromProblems(clonedProblems);
     }
 
 
@@ -86,13 +87,12 @@ public class RetGenerator {
      */
     @Nonnull
     public static <T> RetVal<T> valFromProblem(@Nonnull final Collection<Problem> problems) {
-        if (problems.isEmpty()) {
+        final List<Problem> clonedProblems = copyNonNullValues(problems);
+        if (clonedProblems.isEmpty()) {
             throw new IllegalArgumentException(
                     "Problem return objects must have at least 1 problem");
         }
-        // Need to create a copy of the problems.  Note that copyOf has an internal
-        // no-null value check.
-        return INSTANCE.createValFromProblems(List.copyOf(problems));
+        return INSTANCE.createValFromProblems(clonedProblems);
     }
 
 
@@ -117,10 +117,11 @@ public class RetGenerator {
      */
     @Nonnull
     public static RetVoid voidFromProblem(@Nonnull final Collection<Problem> problems) {
-        if (problems.isEmpty()) {
+        final List<Problem> clonedProblems = copyNonNullValues(problems);
+        if (clonedProblems.isEmpty()) {
             return voidOk();
         }
-        return INSTANCE.createVoidFromProblems(List.copyOf(problems));
+        return INSTANCE.createVoidFromProblems(clonedProblems);
     }
 
 

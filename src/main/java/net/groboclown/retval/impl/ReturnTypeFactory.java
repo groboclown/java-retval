@@ -32,7 +32,8 @@ public interface ReturnTypeFactory {
 
     /**
      * Create a {@link RetNullable} instance with one or more problems.  The
-     * problems are checked before calling to have at least 1 value.
+     * problems are checked before calling to have at least 1 value, no values
+     * are null, and the collection is unmodifiable.
      *
      * @param problems collection of 1 or more problem values.
      * @param <T> type of the value.
@@ -56,7 +57,8 @@ public interface ReturnTypeFactory {
 
     /**
      * Create a new RetVal instance that has errors.  The
-     * problems are checked before calling to have at least 1 value.
+     * problems are checked before calling to have at least 1 value, no values
+     * are null, and the collection is unmodifiable.
      *
      * @param problems list of other problems to include in this value; guaranteed to have at
      *                 least 1 value.
@@ -78,7 +80,8 @@ public interface ReturnTypeFactory {
 
     /**
      * Constructs a {@link RetVoid} instance with the collections of problems.
-     * The list of problems is guaranteed by the caller to have at least 1 problem.
+     * The list of problems is guaranteed by the caller to have at least 1 problem, no values
+     * are null, and the collection is unmodifiable.
      *
      * @param problems list of problems that should be included in this object.
      * @return a RetVoid with all the given problems.

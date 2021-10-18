@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -249,7 +250,7 @@ public class ConfigurationReader {
         }
 
         public void setProjectUsers(@Nonnull final Collection<String> projectUsers) {
-            this.projectUsers = List.copyOf(projectUsers);
+            this.projectUsers = Collections.unmodifiableList(new ArrayList<>(projectUsers));
         }
 
         @Nonnull
