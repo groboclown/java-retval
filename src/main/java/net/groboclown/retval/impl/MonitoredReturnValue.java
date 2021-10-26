@@ -346,6 +346,42 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
         return func.apply(this.value);
     }
 
+    @Nonnull
+    @Override
+    public RetVoid consume(@Nonnull final Consumer<T> consumer) {
+        // This does not count as an observation, because there was no check whether
+        // the value was ok or not.  There might be internal logic inside the consumer
+        // to state that it's okay, but that's breaking the usage pattern for the api.
+        consumer.accept(this.value);
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid consume(@Nonnull final NonnullConsumer<T> consumer) {
+        // This does not count as an observation, because there was no check whether
+        // the value was ok or not.  There might be internal logic inside the consumer
+        // to state that it's okay, but that's breaking the usage pattern for the api.
+        consumer.accept(this.value);
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid produceVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func) {
+        // Passing the observation ball to the new returned value.
+        this.listener.onObserved();
+        return func.apply(this.value);
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid produceVoid(@Nonnull final NonnullFunction<T, RetVoid> func) {
+        // Passing the observation ball to the new returned value.
+        this.listener.onObserved();
+        return func.apply(this.value);
+    }
+
     @Override
     public boolean hasProblems() {
         // This alone does not make a check.  The problems themselves must be extracted or

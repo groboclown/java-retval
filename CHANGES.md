@@ -1,6 +1,38 @@
 # java-retval library Change Log
 
 
+## 2.1.0
+
+API Changes:
+
+* `RetVal`, `RetNullable`, and `WarningVal` now also extend from the `ValuedProblemContainer`, which makes for creating user functions that take problem + value objects easier to make; you don't need to have multiple implementations.
+* `ProblemCollector`:
+  * Added `completeVoid()`
+  * Added `withAll()` for `RetVoid`
+  * Added `with()` for `WarningVal`.
+  * Added `add()` and `addAll()`.
+  * Added `withValuedProblemContainer()`.
+* `ValueAccumulator`:
+  * Added `asRetValList()`
+  * Added `getCollector()`
+  * Added `withAll()`
+  * Added `withAllValues()`
+  * Added `add()` and `addAll()`
+  * Added `addValue()` and `addAllValues()`
+* Added `consume(Consumable)` and `produceVoid(Function)` to `RetVal` and `RetNullable`.  These handle very specific use cases where the normal `thenVoid()` call would cause an ambiguous compile error; specifically, where the argument value is ignored and a simple lambda is invoked.
+
+
+Documentation Improvements:
+
+* Added more linking in JavaDoc.
+* Added more JavaDoc in `ProblemCollector`.
+
+
+Test Improvements:
+
+* Added a collection of tests to play with the API to see how well the usage flows.
+
+
 ## 2.0.1
 
 Bug Fixes:

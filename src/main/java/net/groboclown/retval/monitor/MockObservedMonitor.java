@@ -6,13 +6,18 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import net.groboclown.retval.impl.RetGenerator;
+import net.groboclown.retval.impl.ReturnTypeFactory;
 
 /**
  * A mock check monitor, suitable for testing.  Note that if used in a non-test environment,
  * this has the potential to quickly consume lots of memory.
+ *
+ * <p>This replaces the observed monitor and the ret generator to return monitored values.
  */
 public abstract class MockObservedMonitor<T> implements ObservedMonitor<T> {
     private final ObservedMonitor<T> previous;
+    private final ReturnTypeFactory returnTypeFactory;
     private final List<Registered<T>> observables = new ArrayList<>();
 
     // Allow for easily changing the trace enabled behavior.
@@ -20,6 +25,8 @@ public abstract class MockObservedMonitor<T> implements ObservedMonitor<T> {
 
     protected MockObservedMonitor(@Nonnull final ObservedMonitor<T> previous) {
         this.previous = Objects.requireNonNull(previous, "previous monitor");
+        this.returnTypeFactory = Objects.requireNonNull(RetGenerator.getFactory(),
+                "previous return value factory");
     }
 
     /**
@@ -31,6 +38,18 @@ public abstract class MockObservedMonitor<T> implements ObservedMonitor<T> {
     @Nonnull
     protected ObservedMonitor<T> getPrevious() {
         return this.previous;
+    }
+
+    /**
+     * Get the previously installed return type factory, which this object replaced.  Allows for
+     * easy restore of the previous state when the system finishes using this object.
+     *
+     * @return the previously installed factory
+     * @since 2.1
+     */
+    @Nonnull
+    protected ReturnTypeFactory getPreviousReturnTypeFactory() {
+        return this.returnTypeFactory;
     }
 
     /**

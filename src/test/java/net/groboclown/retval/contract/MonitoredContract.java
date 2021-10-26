@@ -4,6 +4,7 @@ package net.groboclown.retval.contract;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Contract tests for the Return objects which are monitored.  There are strict rules around
@@ -222,7 +224,7 @@ public abstract class MonitoredContract {
     @Test
     void val_requireOptional_ok() {
         final RetVal<String> res = createForVal("a");
-        res.requireOptional();
+        final Optional<String> optional = res.requireOptional();
         assertNeverObserved(res);
     }
 
@@ -1018,6 +1020,92 @@ public abstract class MonitoredContract {
         });
         assertNeverObserved(val);
     }
+
+    // ----------------------------------------------------------------------
+    // consume and produceVoid are non-deprecated versions of the thenVoid call, to prevent a
+    // required "return" to disambiguate between the producer and consumer.
+
+    @Test
+    void nullable_consume_ok() {
+        final RetNullable<Character> res = createForNullable('1');
+        res.consume((c) -> {});
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_consume_ok_null() {
+        final RetNullable<Character> res = createForNullable(null);
+        res.consume((c) -> {});
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_consume_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("t");
+        final RetNullable<Character> res = createForNullableProblems(List.of(problem));
+        res.consume((c) -> {});
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_produceVoid_ok() {
+        final RetNullable<Character> res = createForNullable('1');
+        final RetVoid val = createForVoidProblems(List.of(LocalizedProblem.from("q")));
+        res.produceVoid((c) -> val);
+        assertNeverObserved(val);
+    }
+
+    @Test
+    void nullable_produceVoid_ok_null() {
+        final RetNullable<Character> res = createForNullable(null);
+        final RetVoid val = createForVoidProblems(List.of(LocalizedProblem.from("q")));
+        res.produceVoid((c) -> val);
+        assertNeverObserved(val);
+    }
+
+    @Test
+    void nullable_produceVoid_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("t");
+        final RetNullable<Character> res = createForNullableProblems(List.of(problem));
+        res.produceVoid((c) -> {
+            throw new IllegalStateException("not reachable");
+        });
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void val_consume_ok() {
+        final RetVal<Character> res = createForVal('1');
+        res.consume((c) -> {});
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void val_consume_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("t");
+        final RetVal<Character> res = createForValProblems(List.of(problem));
+        res.consume((c) -> {});
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void val_produceVoid_ok() {
+        final RetVal<Character> res = createForVal('1');
+        final RetVoid val = createForVoidProblems(List.of(LocalizedProblem.from("q")));
+        res.produceVoid((c) -> val);
+        assertNeverObserved(val);
+    }
+
+    @Test
+    void val_produceVoid_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("t");
+        final RetNullable<Character> res = createForNullableProblems(List.of(problem));
+        res.produceVoid((c) -> {
+            throw new IllegalStateException("not reachable");
+        });
+        assertNeverObserved(res);
+    }
+
 
     // ----------------------------------------------------------------------
     // isOk only performs an observation if there are no problems.

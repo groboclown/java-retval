@@ -6,6 +6,7 @@ Library for Java 9+ programs to combine error messages and return values in a si
 # Topics
 
 * JavaDoc:
+  * [2.1](2.1)
   * [2.0](2.0)
   * [1.0](1.0)
 * External Links:

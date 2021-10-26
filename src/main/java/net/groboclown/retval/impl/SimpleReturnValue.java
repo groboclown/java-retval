@@ -229,6 +229,34 @@ public class SimpleReturnValue<T> implements RetVal<T>, RetNullable<T> {
 
     @Nonnull
     @Override
+    public RetVoid consume(@Nonnull final NonnullConsumer<T> consumer) {
+        //noinspection ConstantConditions
+        consumer.accept(this.value);
+        return SimpleRetVoidOk.OK;
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid consume(@Nonnull final Consumer<T> consumer) {
+        consumer.accept(this.value);
+        return SimpleRetVoidOk.OK;
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid produceVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func) {
+        return func.apply(this.value);
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid produceVoid(@Nonnull final NonnullFunction<T, RetVoid> func) {
+        //noinspection ConstantConditions
+        return func.apply(this.value);
+    }
+
+    @Nonnull
+    @Override
     public SimpleReturnValue<T> thenRun(@Nonnull final Runnable runner) {
         runner.run();
         return this;

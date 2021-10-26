@@ -2,6 +2,7 @@
 package net.groboclown.retval.contract;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -611,6 +612,98 @@ public abstract class RetNullableContract {
         final RetNullable<Integer> res = createForNullableProblems(List.of(problem));
         final RetVoid val = res.thenVoid((Consumer<Integer>) (v) -> {
             throw new IllegalStateException("unreachable code");
+        });
+        assertEquals(List.of(problem), val.anyProblems());
+    }
+
+    @Test
+    void consume_ok() {
+        final List<Character> visited = new ArrayList<>();
+        final RetNullable<Character> res = createForNullable('c');
+        final RetVoid val = res.consume(visited::add);
+        assertEquals(List.of(), val.anyProblems());
+        assertEquals(List.of('c'), visited);
+    }
+
+    @Test
+    void consume_ok_null() {
+        final List<Character> visited = new ArrayList<>();
+        final RetNullable<Character> res = createForNullable(null);
+        final RetVoid val = res.consume(visited::add);
+        assertEquals(List.of(), val.anyProblems());
+        assertEquals(Arrays.asList(new Object[] {null}), visited);
+    }
+
+    @Test
+    void consume_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("6");
+        final RetNullable<Character> res = createForNullableProblems(List.of(problem));
+        final RetVoid val = res.consume((c) -> {
+            throw new IllegalStateException("not reachable");
+        });
+        assertEquals(List.of(problem), val.anyProblems());
+    }
+
+    @Test
+    void produceVoid_ok() {
+        final List<Character> visited = new ArrayList<>();
+        final RetNullable<Character> res = createForNullable('c');
+        final RetVoid val = res.produceVoid((v) -> {
+            visited.add(v);
+            // Implementations can translate this returned value to any RetVoid
+            // desired.
+            return RetVoid.ok();
+        });
+        assertEquals(List.of(), val.anyProblems());
+        assertEquals(List.of('c'), visited);
+    }
+
+    @Test
+    void produceVoid_ok_problem() {
+        final List<Character> visited = new ArrayList<>();
+        final LocalizedProblem problem = LocalizedProblem.from("6");
+        final RetNullable<Character> res = createForNullable('c');
+        final RetVoid val = res.produceVoid((c) -> {
+            visited.add(c);
+            return RetVoid.fromProblem(problem);
+        });
+        assertEquals(List.of(problem), val.anyProblems());
+        assertEquals(List.of('c'), visited);
+    }
+
+    @Test
+    void produceVoid_ok_null() {
+        final List<Character> visited = new ArrayList<>();
+        final RetNullable<Character> res = createForNullable(null);
+        final RetVoid val = res.produceVoid((v) -> {
+            visited.add(v);
+            // Implementations can translate this returned value to any RetVoid
+            // desired.
+            return RetVoid.ok();
+        });
+        assertEquals(List.of(), val.anyProblems());
+        assertEquals(Arrays.asList(new Object[] {null}), visited);
+    }
+
+    @Test
+    void produceVoid_ok_null_problem() {
+        final List<Character> visited = new ArrayList<>();
+        final LocalizedProblem problem = LocalizedProblem.from("6");
+        final RetNullable<Character> res = createForNullable(null);
+        final RetVoid val = res.produceVoid((c) -> {
+            visited.add(c);
+            return RetVoid.fromProblem(problem);
+        });
+        assertEquals(List.of(problem), val.anyProblems());
+        assertEquals(Arrays.asList(new Object[] {null}), visited);
+    }
+
+    @Test
+    void produceVoid_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("6");
+        final RetNullable<Character> res = createForNullableProblems(List.of(problem));
+        final RetVoid val = res.produceVoid((c) -> {
+            throw new IllegalStateException("not reachable");
         });
         assertEquals(List.of(problem), val.anyProblems());
     }

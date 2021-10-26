@@ -248,6 +248,30 @@ public class SimpleReturnProblem<T> implements RetVal<T>, RetNullable<T>, RetVoi
 
     @Nonnull
     @Override
+    public RetVoid consume(@Nonnull final NonnullConsumer<T> consumer) {
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid consume(@Nonnull final Consumer<T> consumer) {
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid produceVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func) {
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid produceVoid(@Nonnull final NonnullFunction<T, RetVoid> func) {
+        return this;
+    }
+
+    @Nonnull
+    @Override
     public SimpleReturnProblem<T> thenRun(@Nonnull final Runnable runner) {
         return this;
     }

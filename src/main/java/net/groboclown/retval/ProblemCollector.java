@@ -4,6 +4,7 @@ package net.groboclown.retval;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -120,6 +121,28 @@ public class ProblemCollector implements ProblemContainer {
     }
 
     /**
+     * Adds a single problem to the collection.  Reflects a Collection "add" call.
+     *
+     * @param problem problem object
+     * @since 2.1
+     */
+    public void add(@Nonnull final Problem problem) {
+        this.problems.add(Objects.requireNonNull(problem));
+    }
+
+    /**
+     * Adds a single problem to the collection.  Reflects a Collection "add" call.
+     *
+     * @param problems problem object
+     * @since 2.1
+     */
+    public void addAll(@Nonnull final Iterable<Problem> problems) {
+        for (final Problem problem : problems) {
+            this.problems.add(Objects.requireNonNull(problem));
+        }
+    }
+
+    /**
      * Adds all the problems in the argument into this collector.
      *
      * @param problem a problem to add
@@ -192,6 +215,94 @@ public class ProblemCollector implements ProblemContainer {
         this.problems.addAll(value.anyProblems());
         if (value.isOk()) {
             setter.accept(value.result());
+        }
+        return this;
+    }
+
+    /**
+     * If the value has problems, load them into this collector.  Always pass the value
+     * to the setter.
+     *
+     * @param value nullable value
+     * @param setter function that handles the nullable value if it has no problems.
+     * @param <T> type of the value
+     * @return this collector
+     * @since 2.1
+     */
+    @Nonnull
+    public <T> ProblemCollector with(
+            @Nonnull final WarningVal<T> value,
+            @Nonnull final NonnullConsumer<T> setter
+    ) {
+        // This method doesn't call joinProblems, because the error state and value are
+        // pulled in.
+        this.problems.addAll(value.anyProblems());
+        setter.accept(value.getValue());
+        return this;
+    }
+
+    /**
+     * Add in any problems from the value into this collector.
+     *
+     * @param value value that may have problems.
+     * @return this collector.
+     */
+    @Nonnull
+    public ProblemCollector with(@Nonnull final RetVoid value) {
+        this.problems.addAll(value.anyProblems());
+        return this;
+    }
+
+    /**
+     * If the value has problems, load them into this collector,
+     * otherwise pass the value as an argument to the setter.
+     *
+     * @param value nullable value
+     * @param setter function that handles the nullable value if it has no problems.
+     * @param <T> type of the value
+     * @return this collector
+     * @since 2.1
+     */
+    @Nonnull
+    public <T> ProblemCollector withValuedProblemContainer(
+            @Nonnull final ValuedProblemContainer<T> value,
+            @Nonnull final Consumer<T> setter
+    ) {
+        // This method doesn't call joinProblems, because the error state and value are
+        // pulled in.
+        this.problems.addAll(value.anyProblems());
+        if (value.isOk()) {
+            setter.accept(value.getValue());
+        }
+        return this;
+    }
+
+    /**
+     * Add into this collector any problems from each of the values.
+     *
+     * @param values collection of values that may have problems.
+     * @return this collector.
+     * @since 2.1
+     */
+    @Nonnull
+    public ProblemCollector withAll(@Nonnull final RetVoid... values) {
+        for (final RetVoid value : values) {
+            this.problems.addAll(value.anyProblems());
+        }
+        return this;
+    }
+
+    /**
+     * Add into this collector any problems from each of the values.
+     *
+     * @param values collection of values that may have problems.
+     * @return this collector.
+     * @since 2.1
+     */
+    @Nonnull
+    public ProblemCollector withAll(@Nonnull final Iterable<RetVoid> values) {
+        for (final RetVoid value : values) {
+            this.problems.addAll(value.anyProblems());
         }
         return this;
     }
@@ -325,7 +436,7 @@ public class ProblemCollector implements ProblemContainer {
 
     /**
      * Return a nullable value, unless this collector has problems,
-     * in which case a RetNullable is returned with the problems.
+     * in which case a {@link RetNullable} is returned with the problems.
      *
      * @param value nullable value to include in the return value
      * @param <T> type of the value
@@ -339,6 +450,32 @@ public class ProblemCollector implements ProblemContainer {
         return RetNullable.fromProblem(this.problems);
     }
 
+    /**
+     *  Return the collection of problems as a {@link RetVoid}.  If there are no problems,
+     *  then the returned value is ok.
+     *
+     *  <p>In general, it's better to use
+     *  {@link RetVoid#fromProblems(ProblemContainer, ProblemContainer...)}, taking this
+     *  collector as the argument, but it's provided here for symmetry with the other
+     *  complete methods.
+     *
+     * @return problems or an ok value
+     * @since 2.1
+     */
+    @Nonnull
+    public RetVoid completeVoid() {
+        return RetVoid.fromProblem(this.problems);
+    }
+
+
+    /**
+     * Convert this collection to a warning, containing all this collector's problems along with
+     * the argument value.
+     *
+     * @param value value to include in the warning.
+     * @param <T> type of the value.
+     * @return the warning with this collector's problems and the value.
+     */
     @Nonnull
     public <T> WarningVal<T> asWarning(@Nonnull final T value) {
         return WarningVal.from(value, this);

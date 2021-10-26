@@ -4,15 +4,22 @@ package net.groboclown.retval;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import net.groboclown.retval.monitor.MockProblemMonitor;
 import net.groboclown.retval.problems.LocalizedProblem;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class ValueAccumulatorTest {
     MockProblemMonitor monitor;
@@ -103,6 +110,218 @@ class ValueAccumulatorTest {
         assertSame(ret, accumulator);
         assertEquals(List.of(problem1, problem2), accumulator.anyProblems());
         assertEquals(List.of("a"), new ArrayList<>(accumulator.getValues()));
+    }
+
+    @Test
+    void withAllValues_vararg_1() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('z'));
+        final ValueAccumulator<Character> ret = accumulator.withAllValues('c');
+
+        assertSame(accumulator, ret);
+        assertEquals(List.of('z', 'c'), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void withAllValues_vararg_3() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('x'));
+        final ValueAccumulator<Character> ret = accumulator.withAllValues('c', 'i', 'd');
+
+        assertSame(accumulator, ret);
+        assertEquals(List.of('x', 'c', 'i', 'd'), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void withAllValues_iterators_1_empty() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('u'));
+        final ValueAccumulator<Character> ret = accumulator.withAllValues(List.of());
+
+        assertSame(accumulator, ret);
+        assertEquals(List.of('u'), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void withAllValues_iterators_1() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('t'));
+        final ValueAccumulator<Character> ret = accumulator.withAllValues(List.of('a', 'x'));
+
+        assertSame(accumulator, ret);
+        assertEquals(List.of('t', 'a', 'x'), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void withAllValues_iterators_3() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('w'));
+        final ValueAccumulator<Character> ret = accumulator.withAllValues(
+                List.of('a', 'x'),
+                List.of('e', 'm'));
+
+        assertSame(accumulator, ret);
+        assertEquals(List.of('w', 'a', 'x', 'e', 'm'), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void addValue() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('p'));
+        accumulator.addValue('a');
+        assertEquals(List.of('p', 'a'), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void addValue_null() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from();
+        accumulator.addValue(null);
+        assertEquals(Collections.singletonList(null), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void addAllValues() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('b'));
+        accumulator.addAllValues(List.of('a', 'l', 'b', 'a'));
+        assertEquals(List.of('b', 'a', 'l', 'b', 'a'), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void addAllValues_null() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from();
+        accumulator.addAllValues(Arrays.asList('a', null));
+        assertEquals(Arrays.asList('a', null), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void withAll_retval_ok() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('v'));
+        accumulator.withAll(RetVal.ok(List.of('!')));
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(Arrays.asList('v', '!'), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void withAll_retval_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("1");
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('v'));
+        accumulator.withAll(RetVal.fromProblem(problem));
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), accumulator.asRetVal().anyProblems());
+    }
+
+    @Test
+    void withAll_retnullable_ok() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('v'));
+        accumulator.withAll(RetNullable.ok(List.of('!')));
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(Arrays.asList('v', '!'), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void withAll_retnullable_null() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('v'));
+        accumulator.withAll(RetNullable.ok(null));
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of('v'), accumulator.asRetValList().getValue());
+    }
+
+    @Test
+    void withAll_retnullable_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("1");
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('v'));
+        accumulator.withAll(RetNullable.fromProblem(problem));
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), accumulator.asRetVal().anyProblems());
+    }
+
+    @Test
+    void add_retval_ok() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('u'));
+        accumulator.add(RetVal.ok('p'));
+        assertEquals(List.of('u', 'p'), new ArrayList<>(accumulator.getValues()));
+    }
+
+    @Test
+    void add_retval_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("1");
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('u'));
+        accumulator.add(RetVal.fromProblem(problem));
+        assertEquals(List.of(problem), accumulator.anyProblems());
+        assertEquals(List.of('u'), new ArrayList<>(accumulator.getValues()));
+    }
+
+    @Test
+    void add_retnullable_ok() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('u'));
+        accumulator.add(RetNullable.ok('p'));
+        assertEquals(List.of('u', 'p'), new ArrayList<>(accumulator.getValues()));
+    }
+
+    @Test
+    void add_retnullable_ok_null() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('u'));
+        accumulator.add(RetNullable.ok(null));
+        assertEquals(Arrays.asList('u', null), new ArrayList<>(accumulator.getValues()));
+    }
+
+    @Test
+    void add_retnullable_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("1");
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('u'));
+        accumulator.add(RetNullable.fromProblem(problem));
+        assertEquals(List.of(problem), accumulator.anyProblems());
+        assertEquals(List.of('u'), new ArrayList<>(accumulator.getValues()));
+    }
+
+    @Test
+    void add_vpc_ok() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('u'));
+        accumulator.add(new TestableValuedProblemContainer<>('p'));
+        assertEquals(List.of('u', 'p'), new ArrayList<>(accumulator.getValues()));
+    }
+
+    @Test
+    void add_vpc_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("1");
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('u'));
+        accumulator.add(new TestableValuedProblemContainer<Character>(problem));
+        assertEquals(List.of(problem), accumulator.anyProblems());
+        assertEquals(List.of('u'), new ArrayList<>(accumulator.getValues()));
+    }
+
+    @Test
+    void addAll_ok() {
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('u'));
+        accumulator.addAll(Set.of(
+                RetVal.ok('v'),
+                RetNullable.ok(null),
+                new TestableValuedProblemContainer<>('p')));
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        final Set<Character> expected = new HashSet<>();
+        expected.add('u');
+        expected.add('v');
+        expected.add('p');
+        expected.add(null);
+        assertEquals(expected, new HashSet<>(accumulator.getValues()));
+        assertEquals(List.of(), accumulator.anyProblems());
+    }
+
+    @Test
+    void addAll_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("1");
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('u'));
+        accumulator.addAll(List.of(
+                RetVal.ok('v'),
+                RetNullable.fromProblem(problem),
+                new TestableValuedProblemContainer<>('p')));
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of('u', 'v', 'p'), new ArrayList<>(accumulator.getValues()));
+        assertEquals(List.of(problem), accumulator.anyProblems());
+    }
+
+    @Test
+    void getCollector() {
+        final LocalizedProblem problem = LocalizedProblem.from("1");
+        final ValueAccumulator<Character> accumulator = ValueAccumulator.from(RetVal.ok('v'));
+        assertEquals(List.of(), accumulator.getCollector().anyProblems());
+        accumulator.with(RetVal.fromProblem(problem));
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), accumulator.getCollector().anyProblems());
     }
 
     @Test
@@ -231,6 +450,47 @@ class ValueAccumulatorTest {
     }
 
     @Test
+    void asRetVal_problems() {
+        final LocalizedProblem problem = LocalizedProblem.from("1");
+        final ValueAccumulator<String> accumulator = ValueAccumulator.from();
+        final RetVal<Collection<String>> res = accumulator
+                // Simulate a use case flow.  "asRetVal" implies end-of-execution.
+                .with(RetVal.fromProblem(problem))
+                .with(RetVal.ok("y"))
+                .asRetVal();
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void asRetValList_ok() {
+        final ValueAccumulator<String> accumulator = ValueAccumulator.from();
+        final RetVal<List<String>> res = accumulator
+                // Simulate a use case flow.  "asRetVal" implies end-of-execution.
+                .with(RetVal.ok("x"))
+                .with(RetVal.ok("y"))
+                .asRetValList();
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals(List.of("x", "y"), new ArrayList<>(res.result()));
+    }
+
+    @Test
+    void asRetValList_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("1");
+        final ValueAccumulator<String> accumulator = ValueAccumulator.from();
+        final RetVal<List<String>> res = accumulator
+                // Simulate a use case flow.  "asRetVal" implies end-of-execution.
+                .with(RetVal.fromProblem(problem))
+                .with(RetVal.ok("y"))
+                .asRetValList();
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+
+
+    @Test
     void asWarning() {
         final LocalizedProblem problem = LocalizedProblem.from("p");
         final ValueAccumulator<String> accumulator = ValueAccumulator.from();
@@ -283,6 +543,15 @@ class ValueAccumulatorTest {
 
     @Test
     void joinProblemsWith() {
+        final List<Problem> joined = new ArrayList<>();
+        final LocalizedProblem problem1 = LocalizedProblem.from("1");
+        joined.add(problem1);
+        final LocalizedProblem problem2 = LocalizedProblem.from("2");
+        final ValueAccumulator<String> accumulator = ValueAccumulator.from();
+        accumulator.with(RetVal.fromProblem(problem2));
+        accumulator.joinProblemsWith(joined);
+        assertEquals(List.of(problem1, problem2), joined);
+        assertEquals(List.of(problem2), accumulator.anyProblems());
     }
 
     @BeforeEach

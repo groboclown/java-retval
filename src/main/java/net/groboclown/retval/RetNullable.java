@@ -7,6 +7,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import net.groboclown.retval.function.NonnullConsumer;
+import net.groboclown.retval.function.NonnullFunction;
 import net.groboclown.retval.function.NonnullReturnFunction;
 import net.groboclown.retval.impl.RetGenerator;
 
@@ -16,7 +18,7 @@ import net.groboclown.retval.impl.RetGenerator;
  *
  * @param <T> type of the contained value
  */
-public interface RetNullable<T> extends ProblemContainer {
+public interface RetNullable<T> extends ValuedProblemContainer<T>, ProblemContainer {
 
     // Developer notes:
     //   1. This class must be carefully constructed to allow one class to represent it and
@@ -298,6 +300,11 @@ public interface RetNullable<T> extends ProblemContainer {
      * Pass the value of this instance to the consumer, only if there are no problems.  Return
      * a void version of this instance.
      *
+     * <p>A note about usage: if the argument is a lambda that ignores the argument, then
+     * the compiler will fail due to an ambiguous call.  There exist some use cases where the
+     * argument value is no longer needed and can be safely ignored; for those scenarios, use
+     * {@link #consume(Consumer)}.
+     *
      * <p>This call will lose the contained value on return, so it's used to pass on the value
      * to another object.
      *
@@ -311,6 +318,11 @@ public interface RetNullable<T> extends ProblemContainer {
      * Pass the value of this instance to the consumer, only if there are no problems.  Return
      * the function's value.
      *
+     * <p>A note about usage: if the argument is a lambda that ignores the argument, then
+     * the compiler will fail due to an ambiguous call.  There exist some use cases where the
+     * argument value is no longer needed and can be safely ignored; for those scenarios, use
+     * {@link #produceVoid(NonnullReturnFunction)}.
+     *
      * <p>This call will lose the contained value on return, so it's used to pass on the value
      * to another object.
      *
@@ -319,4 +331,30 @@ public interface RetNullable<T> extends ProblemContainer {
      */
     @Nonnull
     RetVoid thenVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func);
+
+    /**
+     * Pass the value of this instance to the consumer, only if there are no problems.  Return
+     * a void version of this instance.
+     *
+     * <p>This call will lose the contained value on return, so it's used to pass on the value
+     * to another object.
+     *
+     * @param consumer consumer of this value.
+     * @return a response that contains the problem state of the current value.
+     */
+    @Nonnull
+    RetVoid consume(@Nonnull final Consumer<T> consumer);
+
+    /**
+     * Pass the value of this instance to the consumer, only if there are no problems.  Return
+     * the function's value.
+     *
+     * <p>This call will lose the contained value on return, so it's used to pass on the value
+     * to another object.
+     *
+     * @param func consumer of this value.
+     * @return a response that contains the problem state of the current value.
+     */
+    @Nonnull
+    RetVoid produceVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func);
 }

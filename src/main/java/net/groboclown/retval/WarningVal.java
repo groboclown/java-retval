@@ -12,9 +12,11 @@ import javax.annotation.concurrent.Immutable;
 /**
  * A container for a non-null value and associated problems.  Reflects an object that,
  * while valid, may have messages that the user should be made aware of.
+ *
+ * @param <T> type of the underlying value.
  */
 @Immutable
-public class WarningVal<T> implements ProblemContainer {
+public class WarningVal<T> implements ValuedProblemContainer<T> {
     // Because these are warnings, the problems do not need to be checked.
     // The general use case as not warnings has the value picked at for valid
     // data even if there are problems.  In this case, observability on the
@@ -65,6 +67,7 @@ public class WarningVal<T> implements ProblemContainer {
      * @return the value
      */
     @Nonnull
+    @Override
     public T getValue() {
         return this.value;
     }
