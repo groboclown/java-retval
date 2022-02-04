@@ -30,7 +30,7 @@ Library for Java 9+ programs to combine error messages and return values in a si
 
 ### Why?
 
-Sometimes, users want to know all the problems encountered by a program without going through the cycle of run, fix, run.  Sometimes, you want to write code that is error aware without using exceptions to handle well known problems states.
+Sometimes, users want to know all the problems encountered by a program without going through the cycle of run, fix, run.  Sometimes, you want to write code that is error aware without using exceptions to handle well known problem states.
 
 Exceptions have their use, and this isn't intended to replace them.  However, they are limited in what they can do, and generally can make code less user-friendly by showing stack traces instead of human-readable messages.
 
@@ -63,7 +63,7 @@ Gradle projects will need to add the jar to the dependencies section:
 
 ```groovy
 dependencies {
-  implementation 'net.groboclown:retval:2.0.1'
+  implementation 'net.groboclown:retval:2.1.0'
 }
 ```
 
@@ -73,7 +73,7 @@ Maven projects will need to include the runtime dependency:
    <dependency>
       <groupId>net.groboclown</groupId>
       <artifactId>retval</artifactId>
-      <version>2.0.1</version>
+      <version>2.1.0</version>
       <scope>runtime</scope>
     </dependency>
 ```
@@ -280,9 +280,9 @@ This "close" version of the example requires a bit more complexity to use.  Howe
 
 ## Custom Problems
 
-The library provides some simple problem classes to get you started.  However, chances are high that you will want more refined problem definitions.
+The library provides some simple problem classes to get you started.  However, a more refined problem definitions can make for clearer error reporting.
 
-All problem classes must implement the `Problem` interface.  Because problems usually come from a user source, the additional interface `SouredProblem` provides an example for adding additional information to the problem.  You may find that you want a more robust problem source, perhaps a complex structure that includes a source file, and location in a Json document.
+All problem classes must implement the `Problem` interface.  Because problems usually come from a user source, the additional interface `SouredProblem` provides an example for adding additional information to the problem.  You may find that you want a more robust problem source, perhaps a complex structure that includes both a source file and a path to a location in a Json document.
 
 The library doesn't put limitations on what your problem classes should be, but on the other hand, it doesn't provide much functionality for robust problems.  Future versions may include a larger variety of built-in problem classes.
 
@@ -333,7 +333,6 @@ class ConfigurationReaderTest {
     );
     
     // Validate that no problems were dropped.
-    assertTrue(res.isOk());
     assertEquals(
             List.of(),
             this.monitor.getNeverObserved()
@@ -371,13 +370,13 @@ For success checks, it's more helpful to first check for an empty list of proble
 
 ## Validating All Checks are Accounted For
 
-By default, the library will silently ignore Problems that haven't been checked.  Leaving these objects unchecked can be a source of subtle bugs, where problems that may occur in some configuration won't be passed on down stream.
+By default, the library will silently ignore Problems that haven't been checked.  Leaving these objects unchecked can be a source of subtle bugs, where problems that may occur in some configurations won't be passed on down stream.
 
 However, you can set the environment variable or Java property `RETVAL_MONITOR_DEBUG` to `true` to enable logging when a tracked closeable or problem collection is garbage collected but not checked.  This allows for better inspection of where these problem areas may live.  Problems are sent to the Java logging mechanism's warning level, along with a stack trace for where the object was first created.
 
 For production environments, you can set the environment variable or Java property `RETVAL_PRODUCTION` to `true`.  This will disable all monitoring capabilities, which enables optimizations that disables many checks, calls, and object allocations for the `Ret*` objects.
 
-Under the covers, the code provides for two extension points - `Ret*` object creation and monitor implementation.  You can't control these directly through startup parameters, but your code can call static methods on the `RetGenerator` class and the `ObservedMonitorRegistrar` class.  See the API documentation for more details if you are interested in changing these out.  These mechanisms are used by the unit test helpers.
+Under the covers, the code provides for two extension points - `Ret*` object creation and monitor implementation.  You can't control these directly through startup parameters, but your code can call static methods on the `RetGenerator` class and the `ObservedMonitorRegistrar` class.  See the API documentation for more details if you are interested in changing these out.  You can find examples of implementing and changing these mechanisms in the unit test helpers that come with the library.
 
 
 ## Identifying Code Smells
