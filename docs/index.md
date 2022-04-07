@@ -167,7 +167,8 @@ class WebRunner {
             .with(createToken(settingsDir), WebAccess::setJwtToken)
             .with(readUrl(settingsDir), WebAccess::setUrl)
 
-            // Evaluate the results into a valid object, only if there are discovered problems.
+            // Evaluate the results into a valid object.
+            // The code afterwards only runs if it has no discovered problems.
             .evaluate()
             .then((access) -> fetchUrl(access.requireUrl(), access.requireJwtToken()));
   }
@@ -282,7 +283,7 @@ This "close" version of the example requires a bit more complexity to use.  Howe
 
 The library provides some simple problem classes to get you started.  However, a more refined problem definitions can make for clearer error reporting.
 
-All problem classes must implement the `Problem` interface.  Because problems usually come from a user source, the additional interface `SouredProblem` provides an example for adding additional information to the problem.  You may find that you want a more robust problem source, perhaps a complex structure that includes both a source file and a path to a location in a Json document.
+All problem classes must implement the `Problem` interface.  Because problems usually come from a user source, the additional interface `SourcedProblem` provides an example for adding additional information to the problem.  You may find that you want a more robust problem source, perhaps a complex structure that includes both a source file and a path to a location in a Json document.
 
 The library doesn't put limitations on what your problem classes should be, but on the other hand, it doesn't provide much functionality for robust problems.  Future versions may include a larger variety of built-in problem classes.
 
