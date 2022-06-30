@@ -11,13 +11,15 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
           cache: gradle
-      - name: Gradle bug work-around
-        # See https://github.com/gradle/gradle/issues/14556
-        run: mkdir -p /home/runner/.gradle/jdks/jdk-9.0.4+11/legal/jdk.dynalink
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Build Library
-        run: ./gradlew clean build
+        # Work-around for a gradle bug.  Unpacking tars with read-only directories causes
+        #   permission denied errors.
+        # See https://github.com/gradle/gradle/issues/14556
+        run: |
+          ./gradlew clean build || \
+          ( chmod -R +w /home/runner/.gradle ; ./gradlew clean build )
 
       - name: assemble code-coverage report
         run: "mkdir -p build/distributions && ( cd build/reports/jacoco/test/html && zip -9r ../../../../distributions/jacoco-report.zip * )"
