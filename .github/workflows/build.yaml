@@ -11,6 +11,9 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
           cache: gradle
+      - name: Gradle bug work-around
+        # See https://github.com/gradle/gradle/issues/14556
+        run: mkdir -p /home/runner/.gradle/jdks/jdk-9.0.4+11/legal/jdk.dynalink
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Build Library
