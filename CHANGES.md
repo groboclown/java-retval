@@ -10,8 +10,9 @@ API Changes:
   * Added `defaultAs()`
   * Added `consumeIfNonnull()`
   * Added `defaultOrMap()`
+  * Added `defaultOrThen()`
   * Added `nullOrMap()`
-  * Added `nullOrNullable()`
+  * Added `nullOrThenNullable()`
 
 
 ## 2.1.0
