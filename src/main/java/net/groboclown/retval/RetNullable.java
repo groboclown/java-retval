@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.groboclown.retval.function.NonnullConsumer;
 import net.groboclown.retval.function.NonnullFunction;
+import net.groboclown.retval.function.NonnullParamFunction;
 import net.groboclown.retval.function.NonnullReturnFunction;
 import net.groboclown.retval.impl.RetGenerator;
 
@@ -132,6 +133,20 @@ public interface RetNullable<T> extends ValuedProblemContainer<T>, ProblemContai
      */
     @Nullable
     T result();
+
+    /**
+     * Get the stored value, or, if the stored value is null, return the non-null argument.  If
+     * this value is a problem, then an exception is raised.
+     *
+     * @param defaultValue value to return if the stored value is null.
+     * @return the stored value, or the defaultValue if the stored value is null.
+     * @throws IllegalStateException if there are problems
+     */
+    @Nonnull
+    default T result(@Nonnull T defaultValue) {
+        T ret = result();
+        return ret == null ? defaultValue : ret;
+    }
 
     /**
      * Convert the value into an optional typed value only if there are no problems.
@@ -357,4 +372,167 @@ public interface RetNullable<T> extends ValuedProblemContainer<T>, ProblemContai
      */
     @Nonnull
     RetVoid produceVoid(@Nonnull final NonnullReturnFunction<T, RetVoid> func);
+
+    /**
+     * Require that this value contains a non-null value, otherwise produce a
+     * value with the problem arguments.  If this value already has a problem,
+     * the arguments are ignored.
+     *
+     * @param problem  problem to report if the value is null.
+     * @param problems optional other problems to report if the value is null.
+     * @return if non-null, return this value, otherwise the problem arguments.
+     * @since 2.2.0
+     */
+    @Nonnull
+    default RetVal<T> requireNonNull(
+            @Nonnull final Problem problem,
+            @Nonnull final Problem... problems) {
+        if (hasProblems()) {
+            return forwardProblems();
+        }
+        final T value = getValue();
+        return value == null
+                ? RetVal.fromProblem(problem, problems)
+                : RetVal.ok(value);
+    }
+
+    /**
+     * Returns this object as a {@link RetVal} if it is not null, otherwise a value with the
+     * returned value.  If this value has a problem, that is still returned.
+     *
+     * @param defaultValue value to use if this object contains a null value.
+     * @return the value with a non-null result, using the parameter if this object contains a
+     *      null value.
+     * @since 2.2.0
+     */
+    @Nonnull
+    default RetVal<T> defaultAs(@Nonnull T defaultValue) {
+        if (hasProblems()) {
+            return forwardProblems();
+        }
+        final T value = getValue();
+        return value == null
+                       ? RetVal.ok(defaultValue)
+                       : RetVal.ok(value);
+    }
+
+    /**
+     * If this value has a problem, then it is returned as a {@link RetVoid}.  If it
+     * contains a null value, then the equivalent of {@link RetVoid#ok()} is returned.
+     * Otherwise, the consumer is called with the value, and {@link RetVoid#ok()} is returned.
+     *
+     * @param consumer consumer called with the value if there are no problems and the value is
+     *                non-null.
+     * @return the problems or a problem-free void value.
+     * @since 2.2.0
+     */
+    @Nonnull
+    default RetVoid consumeIfNonnull(@Nonnull final NonnullConsumer<T> consumer) {
+        if (hasProblems()) {
+            return forwardVoidProblems();
+        }
+        final T value = getValue();
+        if (value != null) {
+            consumer.accept(value);
+        }
+        return RetVoid.ok();
+    }
+
+    /**
+     * If this value has a problem, then it is returned.  If the stored value is null,
+     * then {@literal defaultValue} is returned.  If the stored value is non-null, then
+     * it is passed to the function and returned.
+     *
+     * @param <R> mapped-to value type
+     * @param defaultValue value to return if the stored value is null.
+     * @param func function to process the stored value if it is non-null.
+     * @return this value's problems, or the mapped-to value, or the default value.
+     * @since 2.2.0
+     */
+    @Nonnull
+    default <R> RetVal<R> defaultOrMap(
+            @Nonnull final R defaultValue,
+            @Nonnull final NonnullFunction<T, R> func) {
+        if (hasProblems()) {
+            return forwardProblems();
+        }
+        final T value = getValue();
+        if (value != null) {
+            return RetVal.ok(func.apply(value));
+        }
+        return RetVal.ok(defaultValue);
+    }
+
+
+    /**
+     * If this value has a problem, then it is returned.  If the stored value is null,
+     * then {@literal defaultValue} is returned.  If the stored value is non-null, then
+     * it is passed to the function and returned.
+     *
+     * @param <R> mapped-to value type
+     * @param defaultValue value to return if the stored value is null.
+     * @param func function to process the stored value if it is non-null.
+     * @return this value's problems, or the mapped-to value, or the default value.
+     * @since 2.2.0
+     */
+    @Nonnull
+    default <R> RetVal<R> defaultOrThen(
+            @Nonnull final R defaultValue,
+            @Nonnull final NonnullFunction<T, RetVal<R>> func) {
+        if (hasProblems()) {
+            return forwardProblems();
+        }
+        final T value = getValue();
+        if (value != null) {
+            return func.apply(value);
+        }
+        return RetVal.ok(defaultValue);
+    }
+
+    /**
+     * If this value has a problem, then it is returned.  If the stored value is null,
+     * then {@literal null} is returned.  If the stored value is non-null, then
+     * it is passed to the function and returned.
+     *
+     * @param <R> mapped-to value type
+     * @param func function to process the stored value if it is non-null.
+     * @return this value's problems, or the mapped-to value, or the default value.
+     * @since 2.2.0
+     */
+    @Nonnull
+    default <R> RetNullable<R> nullOrMap(
+            @Nonnull final NonnullParamFunction<T, R> func) {
+        if (hasProblems()) {
+            return forwardNullableProblems();
+        }
+        final T value = getValue();
+        if (value != null) {
+            return RetNullable.ok(func.apply(value));
+        }
+        return RetNullable.ok(null);
+    }
+
+
+    /**
+     * If this value has a problem, then it is returned.  If the stored value is null,
+     * then {@literal null} is returned.  If the stored value is non-null, then
+     * it is passed to the function and returned.
+     *
+     * @param <R> mapped-to value type
+     * @param func function to process the stored value if it is non-null.
+     * @return this value's problems, or the mapped-to value, or the default value.
+     * @since 2.2.0
+     */
+    @Nonnull
+    default <R> RetNullable<R> nullOrThenNullable(
+            @Nonnull final NonnullFunction<T, RetNullable<R>> func) {
+        if (hasProblems()) {
+            return forwardNullableProblems();
+        }
+        final T value = getValue();
+        if (value != null) {
+            return func.apply(value);
+        }
+        return RetNullable.ok(null);
+    }
 }

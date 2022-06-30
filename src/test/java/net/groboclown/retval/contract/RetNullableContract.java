@@ -19,12 +19,7 @@ import net.groboclown.retval.function.NonnullReturnFunction;
 import net.groboclown.retval.problems.LocalizedProblem;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 /**
@@ -131,6 +126,36 @@ public abstract class RetNullableContract {
 
         // Call and check result.  Note this is done without the "isOk" wrapper.
         assertEquals(Long.MIN_VALUE, res.result());
+    }
+
+    @Test
+    void result_default_problem() {
+        final RetNullable<Object> res = createForNullableProblems(
+                List.of(LocalizedProblem.from("x")));
+        try {
+            res.result(new Object());
+            fail("Did not throw ISE");
+        } catch (final IllegalStateException e) {
+            // skip exception inspection.
+        }
+    }
+
+    @Test
+    void result_default_nonnull_ok_not_checked() {
+        // Test the explicit rules around observability with this call.
+        final RetNullable<Long> res = createForNullable(Long.MIN_VALUE);
+
+        // Call and check result.  Note this is done without the "isOk" wrapper.
+        assertEquals(Long.MIN_VALUE, res.result(10L));
+    }
+
+    @Test
+    void result_default_null_ok_not_checked() {
+        // Test the explicit rules around observability with this call.
+        final RetNullable<String> res = createForNullable(null);
+
+        // Call and check result.  Note this is done without the "isOk" wrapper.
+        assertEquals("foo", res.result("foo"));
     }
 
     @Test
@@ -706,6 +731,269 @@ public abstract class RetNullableContract {
             throw new IllegalStateException("not reachable");
         });
         assertEquals(List.of(problem), val.anyProblems());
+    }
+
+    @Test
+    void requireNonNull_nonnull() {
+        final RetNullable<String> src = createForNullable("x");
+        final LocalizedProblem problem = LocalizedProblem.from("7a");
+        final RetVal<String> res = src.requireNonNull(problem);
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals("x", res.result());
+    }
+
+    @Test
+    void requireNonNull_null_oneProblem() {
+        final RetNullable<String> src = createForNullable(null);
+        final LocalizedProblem problem = LocalizedProblem.from("qq");
+        final RetVal<String> res = src.requireNonNull(problem);
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void requireNonNull_null_twoProblems() {
+        final RetNullable<String> src = createForNullable(null);
+        final LocalizedProblem problem1 = LocalizedProblem.from("7a");
+        final LocalizedProblem problem2 = LocalizedProblem.from("7b");
+        final RetVal<String> res = src.requireNonNull(problem1, problem2);
+        assertEquals(List.of(problem1, problem2), res.anyProblems());
+    }
+
+    @Test
+    void requireNonNull_null_threeProblems() {
+        final RetNullable<String> src = createForNullable(null);
+        final LocalizedProblem problem1 = LocalizedProblem.from("7a");
+        final LocalizedProblem problem2 = LocalizedProblem.from("7b");
+        final LocalizedProblem problem3 = LocalizedProblem.from("7c");
+        final RetVal<String> res = src.requireNonNull(problem1, problem2, problem3);
+        assertEquals(List.of(problem1, problem2, problem3), res.anyProblems());
+    }
+
+    @Test
+    void requireNonNull_problem() {
+        final LocalizedProblem problem1 = LocalizedProblem.from("7a");
+        final LocalizedProblem problem2 = LocalizedProblem.from("7b");
+        final RetNullable<Character> src = createForNullableProblems(List.of(problem1));
+        RetVal<Character> res = src.requireNonNull(problem2);
+        assertEquals(List.of(problem1), res.anyProblems());
+    }
+
+    @Test
+    void defaultAs_nonnull() {
+        final Object val = new Object();
+        final RetNullable<Object> src = createForNullable(val);
+        final RetVal<Object> res = src.defaultAs(new Object());
+        assertEquals(List.of(), res.anyProblems());
+        assertSame(val, res.result());
+    }
+
+    @Test
+    void defaultAs_null() {
+        final RetNullable<Object> src = createForNullable(null);
+        final Object val = new Object();
+        final RetVal<Object> res = src.defaultAs(val);
+        assertEquals(List.of(), res.anyProblems());
+        assertSame(val, res.result());
+    }
+
+    @Test
+    void defaultAs_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("fg");
+        final RetNullable<Character> src = createForNullableProblems(List.of(problem));
+        RetVal<Character> res = src.defaultAs('x');
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void consumeIfNonnull_nonnull() {
+        final RetNullable<String> src = createForNullable("v1");
+        final String[] observed = new String[] { null };
+        RetVoid res = src.consumeIfNonnull((v) -> observed[0] = v);
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals("v1", observed[0]);
+    }
+
+    @Test
+    void consumeIfNonnull_null() {
+        final RetNullable<Object> src = createForNullable(null);
+        RetVoid res = src.consumeIfNonnull((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(), res.anyProblems());
+    }
+
+    @Test
+    void consumeIfNonnull_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("bd");
+        final RetNullable<Character> src = createForNullableProblems(List.of(problem));
+        RetVoid res = src.consumeIfNonnull((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void defaultOrMap_nonnull() {
+        final Object val = new Object();
+        final RetNullable<Object> src = createForNullable(val);
+        final Object[] observed = new Object[] { null };
+        final RetVal<String> res = src.defaultOrMap("foo", (v) -> {
+            observed[0] = v;
+            return "bar";
+        });
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals(val, observed[0]);
+        assertEquals("bar", res.result());
+    }
+
+    @Test
+    void defaultOrMap_null() {
+        final RetNullable<Object> src = createForNullable(null);
+        final RetVal<String> res = src.defaultOrMap("foo", (v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals("foo", res.result());
+    }
+
+    @Test
+    void defaultOrMap_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("tt4");
+        final RetNullable<Character> src = createForNullableProblems(List.of(problem));
+        final RetVal<String> res = src.defaultOrMap("foo", (v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void defaultOrThen_nonnull() {
+        final Object val = new Object();
+        final RetNullable<Object> src = createForNullable(val);
+        final Object[] observed = new Object[] { null };
+        final RetVal<String> res = src.defaultOrThen("foo", (v) -> {
+            observed[0] = v;
+            return RetVal.ok("bar");
+        });
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals(val, observed[0]);
+        assertEquals("bar", res.result());
+    }
+
+    @Test
+    void defaultOrThen_null() {
+        final RetNullable<Object> src = createForNullable(null);
+        final RetVal<String> res = src.defaultOrThen("foo", (v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals("foo", res.result());
+    }
+
+    @Test
+    void defaultOrThen_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("tt5");
+        final RetNullable<Character> src = createForNullableProblems(List.of(problem));
+        final RetVal<String> res = src.defaultOrThen("foo", (v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void nullOrMap_nonnull() {
+        final Object val = new Object();
+        final RetNullable<Object> src = createForNullable(val);
+        final Object[] observed = new Object[] { null };
+        final RetNullable<String> res = src.nullOrMap((v) -> {
+            observed[0] = v;
+            return "bar";
+        });
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals(val, observed[0]);
+        assertEquals("bar", res.result());
+    }
+
+    @Test
+    void nullOrMap_nonnull_nullRet() {
+        final Object val = new Object();
+        final RetNullable<Object> src = createForNullable(val);
+        final Object[] observed = new Object[] { null };
+        final RetNullable<String> res = src.nullOrMap((v) -> {
+            observed[0] = v;
+            return null;
+        });
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals(val, observed[0]);
+        assertNull(res.result());
+    }
+
+    @Test
+    void nullOrMap_null() {
+        final RetNullable<Object> src = createForNullable(null);
+        final RetNullable<String> res = src.nullOrMap((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(), res.anyProblems());
+        assertNull(res.result());
+    }
+
+    @Test
+    void nullOrMap_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from(",");
+        final RetNullable<Character> src = createForNullableProblems(List.of(problem));
+        final RetNullable<String> res = src.nullOrMap((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void nullOrThenNullable_nonnull() {
+        final Object val = new Object();
+        final RetNullable<Object> src = createForNullable(val);
+        final Object[] observed = new Object[] { null };
+        final RetNullable<String> res = src.nullOrThenNullable((v) -> {
+            observed[0] = v;
+            return RetNullable.ok("bar");
+        });
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals(val, observed[0]);
+        assertEquals("bar", res.result());
+    }
+
+    @Test
+    void nullOrThenNullable_nonnull_nullRet() {
+        final Object val = new Object();
+        final RetNullable<Object> src = createForNullable(val);
+        final Object[] observed = new Object[] { null };
+        final RetNullable<String> res = src.nullOrThenNullable((v) -> {
+            observed[0] = v;
+            return RetNullable.ok(null);
+        });
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals(val, observed[0]);
+        assertNull(res.result());
+    }
+
+    @Test
+    void nullOrThenNullable_nullSrc() {
+        final RetNullable<Object> src = createForNullable(null);
+        final RetNullable<String> res = src.nullOrThenNullable((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(), res.anyProblems());
+        assertNull(res.result());
+    }
+
+    @Test
+    void nullOrThenNullable_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from(",");
+        final RetNullable<Character> src = createForNullableProblems(List.of(problem));
+        final RetNullable<String> res = src.nullOrThenNullable((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(problem), res.anyProblems());
     }
 
     @Test

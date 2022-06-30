@@ -323,6 +323,48 @@ public class MonitoredReturnProblem<T> implements RetVal<T>, RetNullable<T>, Ret
         return this;
     }
 
+    @Nonnull
+    @Override
+    public RetVal<T> requireNonNull(
+            @Nonnull final Problem problem,
+            @Nonnull final Problem... problems) {
+        return forwardProblems();
+    }
+
+    @Nonnull
+    @Override
+    public RetVal<T> defaultAs(@Nonnull T defaultValue) {
+        return forwardProblems();
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid consumeIfNonnull(@Nonnull final NonnullConsumer<T> consumer) {
+        return forwardVoidProblems();
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetVal<R> defaultOrMap(
+            @Nonnull final R defaultValue,
+            @Nonnull final NonnullFunction<T, R> func) {
+        return forwardProblems();
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> nullOrMap(
+            @Nonnull final NonnullParamFunction<T, R> func) {
+        return forwardNullableProblems();
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> nullOrThenNullable(
+            @Nonnull final NonnullFunction<T, RetNullable<R>> func) {
+        return forwardNullableProblems();
+    }
+
     @Override
     public boolean hasProblems() {
         // This alone does not make a check.  The problems themselves must be extracted or

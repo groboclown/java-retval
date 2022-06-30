@@ -11,8 +11,31 @@ Sometimes, users want to know all the problems encountered by a program without 
 
 Exceptions have their use, and this isn't intended to replace them.  However, they are limited in what they can do, and generally can make code less user-friendly by showing stack traces instead of human-readable messages.
 
+
 ## Documentation
 
 The full user guide is located at the [project page](https://groboclown.github.io/java-retval/).
 
 If you want to contribute to the project, please see the [contributing guide](CONTRIBUTING.md).
+
+
+## Importing into Your Project
+
+Gradle projects will need to add the jar to the dependencies section:
+
+```groovy
+dependencies {
+  implementation 'net.groboclown:retval:2.2.0'
+}
+```
+
+Maven projects will need to include the runtime dependency:
+
+```xml
+   <dependency>
+      <groupId>net.groboclown</groupId>
+      <artifactId>retval</artifactId>
+      <version>2.2.0</version>
+      <scope>runtime</scope>
+    </dependency>
+```

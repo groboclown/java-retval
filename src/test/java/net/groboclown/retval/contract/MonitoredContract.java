@@ -24,7 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+
 
 /**
  * Contract tests for the Return objects which are monitored.  There are strict rules around
@@ -275,6 +276,39 @@ public abstract class MonitoredContract {
         final RetVal<Long> res = createForVal(Long.MAX_VALUE);
         // Call and check result.  Note this is done without the "isOk" wrapper.
         res.result();
+        // Ensure that, after being called, it is still considered unobserved.
+        assertNeverObserved(res);
+    }
+
+
+    @Test
+    void nullable_result_default_problem() {
+        final RetNullable<Object> res = createForNullableProblems(
+                List.of(LocalizedProblem.from("x")));
+        try {
+            res.result("foo");
+        } catch (final IllegalStateException e) {
+            // skip exception inspection.
+        }
+        // Ensure that, after being called, regardless of the ok/problem state, it is still
+        // considered unobserved.
+        assertNeverObserved();
+    }
+
+    @Test
+    void nullable_result_default_ok_not_checked() {
+        final RetNullable<Long> res = createForNullable(Long.MIN_VALUE);
+        // Call and check result.  Note this is done without the "isOk" wrapper.
+        res.result(10L);
+        // Ensure that, after being called, it is still considered unobserved.
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_result_default_null_not_checked() {
+        final RetNullable<Object> res = createForNullable(null);
+        // Call and check result.  Note this is done without the "isOk" wrapper.
+        res.result(new Object());
         // Ensure that, after being called, it is still considered unobserved.
         assertNeverObserved(res);
     }
@@ -1102,6 +1136,155 @@ public abstract class MonitoredContract {
         final RetNullable<Character> res = createForNullableProblems(List.of(problem));
         res.produceVoid((c) -> {
             throw new IllegalStateException("not reachable");
+        });
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_requireNonNull_ok() {
+        final RetNullable<String> res = createForNullable("c");
+        res.requireNonNull(LocalizedProblem.from("t"));
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_requireNonNull_null() {
+        final RetNullable<String> src = createForNullable(null);
+        final RetVal<String> res = src.requireNonNull(LocalizedProblem.from("t"));
+        assertNeverObserved(res);
+        assertNotSame(src, res);
+    }
+
+    @Test
+    void nullable_requireNonNull_problem() {
+        final RetNullable<String> res = createForNullableProblems(
+                List.of(LocalizedProblem.from("a")));
+        res.requireNonNull(LocalizedProblem.from("t"));
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_defaultAs_ok() {
+        final RetNullable<String> res = createForNullable("x");
+        res.defaultAs("a");
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_defaultAs_null() {
+        final RetNullable<String> src = createForNullable(null);
+        final RetVal<String> res = src.defaultAs("a");
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_defaultAs_problem() {
+        final RetNullable<String> res = createForNullableProblems(
+                List.of(LocalizedProblem.from("a")));
+        res.defaultAs("a");
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_consumeIfNonnull_ok() {
+        final RetNullable<String> res = createForNullable("x");
+        res.consumeIfNonnull((v) -> {});
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_consumeIfNonnull_null() {
+        final RetNullable<String> res = createForNullable(null);
+        res.consumeIfNonnull((v) -> {
+            throw new IllegalStateException("should never be called");
+        });
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_consumeIfNonnull_problem() {
+        final RetNullable<String> res = createForNullableProblems(
+                List.of(LocalizedProblem.from("a")));
+        res.consumeIfNonnull((v) -> {
+            throw new IllegalStateException("should never be called");
+        });
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_defaultOrMap_ok() {
+        final RetNullable<String> src = createForNullable("x");
+        final RetVal<String> res = src.defaultOrMap("y", (v) -> "z");
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_defaultOrMap_null() {
+        final RetNullable<String> src = createForNullable(null);
+        final RetVal<String> res = src.defaultOrMap("y", (v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_defaultOrMap_problem() {
+        final RetNullable<String> src = createForNullableProblems(
+                List.of(LocalizedProblem.from("a")));
+        final RetVal<String> res = src.defaultOrMap("y", (v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_nullOrMap_ok() {
+        final RetNullable<String> src = createForNullable("x");
+        RetNullable<String> res = src.nullOrMap((v) -> v + "z");
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_nullOrMap_null() {
+        final RetNullable<String> src = createForNullable(null);
+        RetNullable<RetVal<String>> res = src.nullOrMap((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_nullOrMap_problem() {
+        final RetNullable<String> src = createForNullableProblems(
+                List.of(LocalizedProblem.from("a")));
+        RetNullable<RetVal<String>> res = src.nullOrMap((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_nullOrNullable_ok() {
+        final RetNullable<String> src = createForNullable("x");
+        RetNullable<String> res = src.nullOrThenNullable((v) -> RetNullable.ok(v + "z"));
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_nullOrNullable_null() {
+        final RetNullable<String> src = createForNullable(null);
+        RetNullable<RetVal<String>> res = src.nullOrThenNullable((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertNeverObserved(res);
+    }
+
+    @Test
+    void nullable_nullOrNullable_problem() {
+        final RetNullable<String> src = createForNullableProblems(
+                List.of(LocalizedProblem.from("a")));
+        RetNullable<RetVal<String>> res = src.nullOrThenNullable((v) -> {
+            throw new IllegalStateException("should not be called");
         });
         assertNeverObserved(res);
     }

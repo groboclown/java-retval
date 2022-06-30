@@ -11,6 +11,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.groboclown.retval.Problem;
 import net.groboclown.retval.ProblemContainer;
+import net.groboclown.retval.Ret;
 import net.groboclown.retval.RetNullable;
 import net.groboclown.retval.RetVal;
 import net.groboclown.retval.RetVoid;
@@ -378,6 +379,78 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
     @Override
     public RetVoid produceVoid(@Nonnull final NonnullFunction<T, RetVoid> func) {
         // Passing the observation ball to the new returned value.
+        this.listener.onObserved();
+        return func.apply(this.value);
+    }
+
+    @Nonnull
+    @Override
+    public RetVal<T> requireNonNull(
+            @Nonnull final Problem problem,
+            @Nonnull final Problem... problems) {
+        if (this.value == null) {
+            // Pass the observation ball to the returned value.
+            this.listener.onObserved();
+            return RetGenerator.valFromProblem(Ret.joinProblems(problem, problems));
+        }
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public RetVal<T> defaultAs(@Nonnull T defaultValue) {
+        if (this.value == null) {
+            // Pass the observation ball to the returned value.
+            this.listener.onObserved();
+            return RetGenerator.valOk(defaultValue);
+        }
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid consumeIfNonnull(@Nonnull final NonnullConsumer<T> consumer) {
+        if (this.value != null) {
+            consumer.accept(this.value);
+        }
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetVal<R> defaultOrMap(
+            @Nonnull final R defaultValue,
+            @Nonnull final NonnullFunction<T, R> func) {
+        // Pass the observation ball to the returned value.
+        this.listener.onObserved();
+        if (this.value == null) {
+            return RetGenerator.valOk(defaultValue);
+        }
+        return RetGenerator.valOk(func.apply(this.value));
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> nullOrMap(
+            @Nonnull final NonnullParamFunction<T, R> func) {
+        if (this.value == null) {
+            //noinspection unchecked
+            return (RetNullable<R>) this;
+        }
+        // Pass the observation ball to the returned value.
+        this.listener.onObserved();
+        return RetGenerator.nullableOk(func.apply(this.value));
+    }
+
+    @Nonnull
+    @Override
+    public <R> RetNullable<R> nullOrThenNullable(
+            @Nonnull final NonnullFunction<T, RetNullable<R>> func) {
+        if (this.value == null) {
+            //noinspection unchecked
+            return (RetNullable<R>) this;
+        }
+        // Pass the observation ball to the returned value.
         this.listener.onObserved();
         return func.apply(this.value);
     }

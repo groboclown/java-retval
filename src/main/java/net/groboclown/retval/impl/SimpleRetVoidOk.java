@@ -10,8 +10,6 @@ import net.groboclown.retval.RetNullable;
 import net.groboclown.retval.RetVal;
 import net.groboclown.retval.RetVoid;
 import net.groboclown.retval.function.NonnullSupplier;
-import net.groboclown.retval.monitor.NoOpObservedMonitor;
-import net.groboclown.retval.monitor.ObservedMonitor;
 
 
 /**

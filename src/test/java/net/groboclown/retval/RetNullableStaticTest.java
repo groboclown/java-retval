@@ -1,26 +1,17 @@
 // Released under the MIT License. 
 package net.groboclown.retval;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Consumer;
-import net.groboclown.retval.function.NonnullReturnFunction;
 import net.groboclown.retval.monitor.MockProblemMonitor;
 import net.groboclown.retval.problems.LocalizedProblem;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 class RetNullableStaticTest {
     MockProblemMonitor monitor;
@@ -350,6 +341,361 @@ class RetNullableStaticTest {
                 List.of(RetVal.fromProblem(problem)),
                 null, List.of()
         );
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void result_default_nonnullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = new Object();
+        assertEquals(src.value, src.result("foo"));
+    }
+
+    @Test
+    void result_default_nullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = null;
+        assertEquals("foo", src.result("foo"));
+    }
+
+    @Test
+    void result_default_problem() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = null;
+        assertEquals("foo", src.result("foo"));
+    }
+
+    @Test
+    void requireNonNull_nonnullValue() {
+        // Default method testing.
+
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = new Object();
+
+        final RetVal<Object> res = src.requireNonNull(problem);
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals(src.value, res.getValue());
+    }
+
+    @Test
+    void requireNonNull_nullValue() {
+        // Default method testing.
+
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = null;
+
+        final RetVal<Object> res = src.requireNonNull(problem);
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void requireNonNull_withProblems() {
+        // Default method testing.
+
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final LocalizedProblem ignored = LocalizedProblem.from("y");
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.problems.add(problem);
+
+        final RetVal<Object> res = src.requireNonNull(ignored);
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void consumeIfNonnull_nonnullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = new Object();
+        final Object[] consumed = new Object[] { null };
+
+        final RetVoid res = src.consumeIfNonnull((v) -> consumed[0] = v);
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertSame(src.value, consumed[0]);
+    }
+
+    @Test
+    void consumeIfNonnull_nullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = null;
+        final RetVoid res = src.consumeIfNonnull((v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+    }
+
+    @Test
+    void consumeIfNonnull_problems() {
+        // Default method testing.
+
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.problems.add(problem);
+        final RetVoid res = src.consumeIfNonnull((v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void defaultAs_nonnullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = new Object();
+
+        RetVal<Object> res = src.defaultAs(new Object());
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertSame(src.value, res.result());
+    }
+
+    @Test
+    void defaultAs_nullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        final Object expected = new Object();
+        src.value = null;
+
+        RetVal<Object> res = src.defaultAs(expected);
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertSame(expected, res.result());
+    }
+
+    @Test
+    void defaultAs_problems() {
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.problems.add(problem);
+        RetVal<Object> res = src.defaultAs(new Object());
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void defaultOrThen_nonnullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = new Object();
+        final Object[] consumed = new Object[] { null };
+
+        RetVal<String> res = src.defaultOrThen("other", (v) -> {
+            consumed[0] = v;
+            return RetVal.ok("value");
+        });
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertSame(src.value, consumed[0]);
+        assertEquals("value", res.result());
+    }
+
+    @Test
+    void defaultOrThen_nullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = null;
+        RetVal<String> res = src.defaultOrThen("other", (v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals("other", res.result());
+    }
+
+    @Test
+    void defaultOrThen_problems() {
+        // Default method testing.
+
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.problems.add(problem);
+        final RetVal<String> res = src.defaultOrThen("other", (v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void defaultOrMap_nonnullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = new Object();
+        final Object[] consumed = new Object[] { null };
+
+        RetVal<String> res = src.defaultOrMap("other", (v) -> {
+            consumed[0] = v;
+            return "value";
+        });
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertSame(src.value, consumed[0]);
+        assertEquals("value", res.result());
+    }
+
+    @Test
+    void defaultOrMap_nullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = null;
+        RetVal<String> res = src.defaultOrMap("other", (v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertEquals("other", res.result());
+    }
+
+    @Test
+    void defaultOrMap_problems() {
+        // Default method testing.
+
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.problems.add(problem);
+        final RetVal<String> res = src.defaultOrMap("other", (v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void nullOrMap_nonnullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = new Object();
+        final Object[] consumed = new Object[] { null };
+        final RetNullable<String> res = src.nullOrMap((v) -> {
+            consumed[0] = v;
+            return "value";
+        });
+
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertSame(src.value, consumed[0]);
+        assertEquals("value", res.result());
+    }
+
+    @Test
+    void nullOrMap_nonnullValueNullRet() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = new Object();
+        final Object[] consumed = new Object[] { null };
+        final RetNullable<String> res = src.nullOrMap((v) -> {
+            consumed[0] = v;
+            return null;
+        });
+
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertSame(src.value, consumed[0]);
+        assertNull(res.result());
+    }
+
+    @Test
+    void nullOrMap_nullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = null;
+        final RetNullable<String> res = src.nullOrMap((v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertNull(res.result());
+    }
+
+    @Test
+    void nullOrMap_problem() {
+        // Default method testing.
+
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.problems.add(problem);
+        final RetNullable<String> res = src.nullOrMap((v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void nullOrNullable_nonnullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = new Object();
+        RetNullable<String> expected = RetNullable.ok("value");
+        final Object[] consumed = new Object[] { null };
+        final RetNullable<String> res = src.nullOrThenNullable((v) -> {
+            consumed[0] = v;
+            return expected;
+        });
+
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertSame(src.value, consumed[0]);
+        assertSame(expected, res);
+    }
+
+    @Test
+    void nullOrNullable_nullValue() {
+        // Default method testing.
+
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = null;
+        final RetNullable<String> res = src.nullOrThenNullable((v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+        assertNull(res.result());
+    }
+
+    @Test
+    void nullOrNullable_problem() {
+        // Default method testing.
+
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.problems.add(problem);
+        final RetNullable<String> res = src.nullOrThenNullable((v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+
         assertEquals(List.of(res), this.monitor.getNeverObserved());
         assertEquals(List.of(problem), res.anyProblems());
     }

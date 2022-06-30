@@ -1,5 +1,18 @@
 # java-retval library Change Log
 
+## 2.2.0
+
+API Changes:
+
+* `RetNullable` includes additional methods to manage null value states.
+  * Added `result()` which takes a default value to return if the stored value is null.
+  * Added `requireNonNull()`
+  * Added `defaultAs()`
+  * Added `consumeIfNonnull()`
+  * Added `defaultOrMap()`
+  * Added `nullOrMap()`
+  * Added `nullOrNullable()`
+
 
 ## 2.1.0
 
