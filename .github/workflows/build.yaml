@@ -17,9 +17,7 @@ jobs:
         # Work-around for a gradle bug.  Unpacking tars with read-only directories causes
         #   permission denied errors.
         # See https://github.com/gradle/gradle/issues/14556
-        run: |
-          ./gradlew clean build || \
-          ( chmod -R +w /home/runner/.gradle ; ./gradlew clean build )
+        run: ./gradlew clean build || ( chmod -R +w /home/runner/.gradle ; ./gradlew clean build )
 
       - name: assemble code-coverage report
         run: "mkdir -p build/distributions && ( cd build/reports/jacoco/test/html && zip -9r ../../../../distributions/jacoco-report.zip * )"
