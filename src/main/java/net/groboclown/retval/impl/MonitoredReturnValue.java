@@ -79,6 +79,7 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
     }
 
     // @Nullable inherited from RetNullable, @Nonnull inherited from RetValue
+    @SuppressWarnings("NullableProblems")
     @Override
     public T result() {
         // This does not indicate a check.  If this is marked as a check and the enforcement
@@ -412,6 +413,17 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
     public RetVoid consumeIfNonnull(@Nonnull final NonnullConsumer<T> consumer) {
         if (this.value != null) {
             consumer.accept(this.value);
+        }
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public RetVoid produceVoidIfNonnull(@Nonnull final NonnullFunction<T, RetVoid> func) {
+        if (this.value != null) {
+            // Pass the observation ball to the returned value.
+            this.listener.onObserved();
+            return func.apply(this.value);
         }
         return this;
     }

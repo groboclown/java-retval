@@ -455,6 +455,47 @@ class RetNullableStaticTest {
     }
 
     @Test
+    void produceVoidIfNonnull_nonnullValue() {
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final RetVoid returned = RetVoid.fromProblem(problem);
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = new Object();
+        final Object[] consumed = new Object[] { null };
+
+        RetVoid res = src.produceVoidIfNonnull((v) -> {
+            consumed[0] = v;
+            return returned;
+        });
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+        assertSame(res, returned);
+        assertSame(src.value, consumed[0]);
+    }
+
+    @Test
+    void produceVoidIfNonnull_nullValue() {
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.value = null;
+        final RetVoid res = src.produceVoidIfNonnull((v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(), res.anyProblems());
+    }
+
+    @Test
+    void produceVoidIfNonnull_problems() {
+        final LocalizedProblem problem = LocalizedProblem.from("x");
+        final TestableRetNullable<Object> src = new TestableRetNullable<>();
+        src.problems.add(problem);
+        final RetVoid res = src.produceVoidIfNonnull((v) -> {
+            throw new RuntimeException("Should never be called");
+        });
+        assertEquals(List.of(res), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
     void defaultAs_nonnullValue() {
         // Default method testing.
 

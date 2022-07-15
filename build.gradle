@@ -6,7 +6,7 @@ plugins {
     id 'signing'
 }
 
-version = '2.2.0'
+version = '2.3.0'
 group = 'net.groboclown'
 
 
@@ -20,7 +20,7 @@ dependencies {
     // implementation 'com.google.code.findbugs:jsr305:3.0.2'
 
     // Use JUnit Jupiter for testing.
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 }
 
 test {

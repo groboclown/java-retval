@@ -1212,6 +1212,32 @@ public abstract class MonitoredContract {
     }
 
     @Test
+    void nullable_produceVoidIfNonnull_ok() {
+        final RetNullable<String> res = createForNullable("x");
+        final RetVoid ret = res.produceVoidIfNonnull((v) -> RetVoid.ok());
+        assertNeverObserved(ret);
+    }
+
+    @Test
+    void nullable_produceVoidIfNonnull_null() {
+        final RetNullable<String> res = createForNullable(null);
+        final RetVoid ret = res.produceVoidIfNonnull((v) -> {
+            throw new IllegalStateException("should never be called");
+        });
+        assertNeverObserved(ret);
+    }
+
+    @Test
+    void nullable_produceVoidIfNonnull_problem() {
+        final RetNullable<String> res = createForNullableProblems(
+                List.of(LocalizedProblem.from("a")));
+        final RetVoid ret = res.produceVoidIfNonnull((v) -> {
+            throw new IllegalStateException("should never be called");
+        });
+        assertNeverObserved(ret);
+    }
+
+    @Test
     void nullable_defaultOrMap_ok() {
         final RetNullable<String> src = createForNullable("x");
         final RetVal<String> res = src.defaultOrMap("y", (v) -> "z");

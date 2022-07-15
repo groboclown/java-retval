@@ -298,6 +298,15 @@ public class SimpleReturnValue<T> implements RetVal<T>, RetNullable<T> {
 
     @Nonnull
     @Override
+    public RetVoid produceVoidIfNonnull(@Nonnull final NonnullFunction<T, RetVoid> func) {
+        if (this.value != null) {
+            return func.apply(this.value);
+        }
+        return RetGenerator.voidOk();
+    }
+
+    @Nonnull
+    @Override
     public <R> RetVal<R> defaultOrMap(
             @Nonnull final R defaultValue,
             @Nonnull final NonnullFunction<T, R> func) {
