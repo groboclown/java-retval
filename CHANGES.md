@@ -1,5 +1,13 @@
 # java-retval library Change Log
 
+## 2.3.0
+
+API Changes:
+
+* `RetNullable` includes another method to manage null value states.
+  * Added `produceVoidIfNonnull()`
+
+
 ## 2.2.0
 
 API Changes:

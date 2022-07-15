@@ -439,6 +439,28 @@ public interface RetNullable<T> extends ValuedProblemContainer<T>, ProblemContai
     }
 
     /**
+     * If this value has a problem, then it is returned as a {@link RetVoid}.  If it
+     * contains a null value, then the equivalent of {@link RetVoid#ok()} is returned.
+     * Otherwise, the consumer is called with the value, and {@link RetVoid#ok()} is returned.
+     *
+     * @param func called with the value if there are no problems and the value is
+     *                non-null, and the return value is returned by this call.
+     * @return the problems or a problem-free void value.
+     * @since 2.3.0
+     */
+    @Nonnull
+    default RetVoid produceVoidIfNonnull(@Nonnull final NonnullFunction<T, RetVoid> func) {
+        if (hasProblems()) {
+            return forwardVoidProblems();
+        }
+        final T value = getValue();
+        if (value != null) {
+            return func.apply(value);
+        }
+        return RetVoid.ok();
+    }
+
+    /**
      * If this value has a problem, then it is returned.  If the stored value is null,
      * then {@literal defaultValue} is returned.  If the stored value is non-null, then
      * it is passed to the function and returned.

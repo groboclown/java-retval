@@ -346,6 +346,12 @@ public class SimpleReturnProblem<T> implements RetVal<T>, RetNullable<T>, RetVoi
 
     @Nonnull
     @Override
+    public RetVoid produceVoidIfNonnull(@Nonnull final NonnullFunction<T, RetVoid> func) {
+        return forwardVoidProblems();
+    }
+
+    @Nonnull
+    @Override
     public <R> RetVal<R> defaultOrMap(
             @Nonnull final R defaultValue,
             @Nonnull final NonnullFunction<T, R> func) {
