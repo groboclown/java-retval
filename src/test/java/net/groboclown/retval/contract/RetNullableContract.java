@@ -774,7 +774,7 @@ public abstract class RetNullableContract {
         final LocalizedProblem problem1 = LocalizedProblem.from("7a");
         final LocalizedProblem problem2 = LocalizedProblem.from("7b");
         final RetNullable<Character> src = createForNullableProblems(List.of(problem1));
-        RetVal<Character> res = src.requireNonNull(problem2);
+        final RetVal<Character> res = src.requireNonNull(problem2);
         assertEquals(List.of(problem1), res.anyProblems());
     }
 
@@ -800,7 +800,7 @@ public abstract class RetNullableContract {
     void defaultAs_problem() {
         final LocalizedProblem problem = LocalizedProblem.from("fg");
         final RetNullable<Character> src = createForNullableProblems(List.of(problem));
-        RetVal<Character> res = src.defaultAs('x');
+        final RetVal<Character> res = src.defaultAs('x');
         assertEquals(List.of(problem), res.anyProblems());
     }
 
@@ -808,7 +808,7 @@ public abstract class RetNullableContract {
     void consumeIfNonnull_nonnull() {
         final RetNullable<String> src = createForNullable("v1");
         final String[] observed = new String[] { null };
-        RetVoid res = src.consumeIfNonnull((v) -> observed[0] = v);
+        final RetVoid res = src.consumeIfNonnull((v) -> observed[0] = v);
         assertEquals(List.of(), res.anyProblems());
         assertEquals("v1", observed[0]);
     }
@@ -816,7 +816,7 @@ public abstract class RetNullableContract {
     @Test
     void consumeIfNonnull_null() {
         final RetNullable<Object> src = createForNullable(null);
-        RetVoid res = src.consumeIfNonnull((v) -> {
+        final RetVoid res = src.consumeIfNonnull((v) -> {
             throw new IllegalStateException("should not be called");
         });
         assertEquals(List.of(), res.anyProblems());
@@ -826,7 +826,41 @@ public abstract class RetNullableContract {
     void consumeIfNonnull_problem() {
         final LocalizedProblem problem = LocalizedProblem.from("bd");
         final RetNullable<Character> src = createForNullableProblems(List.of(problem));
-        RetVoid res = src.consumeIfNonnull((v) -> {
+        final RetVoid res = src.consumeIfNonnull((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(problem), res.anyProblems());
+    }
+
+    @Test
+    void produceVoidIfNonnull_nonnull() {
+        final LocalizedProblem problem = LocalizedProblem.from("bd");
+        final RetVoid expected = RetVoid.fromProblem(problem);
+        final RetNullable<String> src = createForNullable("v1");
+        final String[] observed = new String[] { null };
+        final RetVoid res = src.produceVoidIfNonnull((v) -> {
+            observed[0] = v;
+            return expected;
+        });
+        assertEquals(List.of(problem), res.anyProblems());
+        assertEquals("v1", observed[0]);
+        assertSame(expected, res);
+    }
+
+    @Test
+    void produceVoidIfNonnull_null() {
+        final RetNullable<Object> src = createForNullable(null);
+        final RetVoid res = src.produceVoidIfNonnull((v) -> {
+            throw new IllegalStateException("should not be called");
+        });
+        assertEquals(List.of(), res.anyProblems());
+    }
+
+    @Test
+    void produceVoidIfNonnull_problem() {
+        final LocalizedProblem problem = LocalizedProblem.from("bd");
+        final RetNullable<Character> src = createForNullableProblems(List.of(problem));
+        final RetVoid res = src.produceVoidIfNonnull((v) -> {
             throw new IllegalStateException("should not be called");
         });
         assertEquals(List.of(problem), res.anyProblems());
