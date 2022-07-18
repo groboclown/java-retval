@@ -45,7 +45,8 @@ For the person performing the release:
       1. Run `./gradlew javadoc` and put the generated documentation into the [docs]() directory, under a sub-directory named after the version to release (`mkdir docs/12.2 && cp -R build/docs/javadoc/* docs/12.2/.`).
       2. Update the [docs/index.md]() file with a new link in the JavaDoc list.
    3. Update the [docs/index.md]() file with the new version in the "importing into your project" guide.
-   4. Add, commit, and push.
+   4. Update the [README.md]() file with the new version in the "importing into your project" guide.
+   5. Add, commit, and push.
 3. Merge the `dev` branch into `main`, then commit and push.  Make sure GitHub activity builds are good.
 4. Locally run the build out of the `main` branch (`./gradlew clean build`).
 5. Publish the jar as a Github release artifact.
