@@ -3,10 +3,9 @@ package net.groboclown.retval;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import net.groboclown.retval.impl.MonitoredFactory;
-import net.groboclown.retval.impl.RetGenerator;
-import net.groboclown.retval.impl.ReturnTypeFactory;
 import net.groboclown.retval.monitor.MockProblemMonitor;
 import net.groboclown.retval.problems.LocalizedProblem;
 import org.junit.jupiter.api.AfterEach;
@@ -442,6 +441,127 @@ class ProblemCollectorTest {
         assertEquals(List.of(problem0, problem1, problem2), pc.anyProblems());
         assertEquals(List.of("1", "2"), called);
         assertEquals(List.of(), retList);
+    }
+
+    @Test
+    void collect_ok_retval_ok() {
+        final ProblemCollector pc = ProblemCollector.from();
+        final RetVal<String> res = MonitoredFactory.INSTANCE.createValOk("x");
+        final String ret = pc.collect(res);
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(), pc.anyProblems());
+        assertEquals("x", ret);
+    }
+
+    @Test
+    void collect_ok_retnullable_null_ok() {
+        final ProblemCollector pc = ProblemCollector.from();
+        final RetNullable<String> res =
+                MonitoredFactory.INSTANCE.createNullableOk(null);
+        final String ret = pc.collect(res);
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(), pc.anyProblems());
+        assertNull(ret);
+    }
+
+    @Test
+    void collect_ok_retval_problems() {
+        final LocalizedProblem problem1 = LocalizedProblem.from("1");
+        final LocalizedProblem problem2 = LocalizedProblem.from("2");
+        final ProblemCollector pc = ProblemCollector.from();
+        final RetVal<Object> res =
+                MonitoredFactory.INSTANCE.createValFromProblems(List.of(problem1, problem2));
+        final Object ret = pc.collect(res);
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem1, problem2), pc.anyProblems());
+        assertNull(ret);
+    }
+
+    @Test
+    void collect_problems_retvals_ok() {
+        final LocalizedProblem problem = LocalizedProblem.from("p");
+        final ProblemCollector pc = ProblemCollector.from()
+                .withProblem(problem);
+        final RetVal<String> res = MonitoredFactory.INSTANCE.createValOk("1");
+        final String ret = pc.collect(res);
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), pc.anyProblems());
+        assertEquals("1", ret);
+    }
+
+    @Test
+    void collect_problem_retvals_problems() {
+        final LocalizedProblem problem0 = LocalizedProblem.from("0");
+        final LocalizedProblem problem1 = LocalizedProblem.from("1");
+        final LocalizedProblem problem2 = LocalizedProblem.from("2");
+        final ProblemCollector pc = ProblemCollector.from()
+                .withProblem(problem0);
+        final RetVal<Object> res =
+                MonitoredFactory.INSTANCE.createValFromProblems(List.of(problem1, problem2));
+        final Object ret = pc.collect(res);
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem0, problem1, problem2), pc.anyProblems());
+        assertNull(ret);
+    }
+
+    @Test
+    void collectOptional_ok_retval_ok() {
+        final ProblemCollector pc = ProblemCollector.from();
+        final RetVal<String> res = MonitoredFactory.INSTANCE.createValOk("x");
+        final Optional<String> ret = pc.collectOptional(res);
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(), pc.anyProblems());
+        assertEquals("x", ret.get());
+    }
+
+    @Test
+    void collectOptional_ok_retnullable_null_ok() {
+        final ProblemCollector pc = ProblemCollector.from();
+        final RetNullable<String> res = MonitoredFactory.INSTANCE.createNullableOk(null);
+        final Optional<String> ret = pc.collectOptional(res);
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(), pc.anyProblems());
+        assertFalse(ret.isPresent());
+    }
+
+    @Test
+    void collectOptional_ok_retval_problems() {
+        final LocalizedProblem problem1 = LocalizedProblem.from("1");
+        final LocalizedProblem problem2 = LocalizedProblem.from("2");
+        final ProblemCollector pc = ProblemCollector.from();
+        final RetVal<Object> res =
+                MonitoredFactory.INSTANCE.createValFromProblems(List.of(problem1, problem2));
+        final Optional<Object> ret = pc.collectOptional(res);
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem1, problem2), pc.anyProblems());
+        assertFalse(ret.isPresent());
+    }
+
+    @Test
+    void collectOptional_problems_retvals_ok() {
+        final LocalizedProblem problem = LocalizedProblem.from("p");
+        final ProblemCollector pc = ProblemCollector.from()
+                .withProblem(problem);
+        final RetVal<String> res = MonitoredFactory.INSTANCE.createValOk("1");
+        final Optional<String> ret = pc.collectOptional(res);
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem), pc.anyProblems());
+        assertEquals("1", ret.get());
+    }
+
+    @Test
+    void collectOptional_problem_retvals_problems() {
+        final LocalizedProblem problem0 = LocalizedProblem.from("0");
+        final LocalizedProblem problem1 = LocalizedProblem.from("1");
+        final LocalizedProblem problem2 = LocalizedProblem.from("2");
+        final ProblemCollector pc = ProblemCollector.from()
+                .withProblem(problem0);
+        final RetVal<Object> res =
+                MonitoredFactory.INSTANCE.createValFromProblems(List.of(problem1, problem2));
+        final Optional<Object> ret = pc.collectOptional(res);
+        assertEquals(List.of(), this.monitor.getNeverObserved());
+        assertEquals(List.of(problem0, problem1, problem2), pc.anyProblems());
+        assertFalse(ret.isPresent());
     }
 
     @Test
