@@ -1,5 +1,14 @@
 # java-retval library Change Log
 
+## 2.4.0
+
+API Changes:
+
+* `ProblemCollector` includes new methods to pass-through result values while collecting problems.
+  * Added `collect()`
+  * Added `collectOptional()`
+* Updated the build to include lint messages as errors.  This forced some minor changes to the code to handle these lint problems.
+
 ## 2.3.0
 
 API Changes:

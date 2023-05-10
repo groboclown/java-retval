@@ -8,6 +8,7 @@ Library for Java 9+ programs to combine error messages and return values in a si
 # Topics
 
 * JavaDoc:
+  * [2.4](2.4)
   * [2.3](2.3)
   * [2.2](2.2)
   * [2.1](2.1)
@@ -67,7 +68,7 @@ Gradle projects will need to add the jar to the dependencies section:
 
 ```groovy
 dependencies {
-  implementation 'net.groboclown:retval:2.3.0'
+  implementation 'net.groboclown:retval:2.4.0'
 }
 ```
 
@@ -77,7 +78,7 @@ Maven projects will need to include the runtime dependency:
    <dependency>
       <groupId>net.groboclown</groupId>
       <artifactId>retval</artifactId>
-      <version>2.3.0</version>
+      <version>2.4.0</version>
       <scope>runtime</scope>
     </dependency>
 ```
