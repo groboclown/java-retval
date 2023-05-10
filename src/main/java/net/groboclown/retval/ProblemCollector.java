@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -333,6 +334,57 @@ public class ProblemCollector implements ProblemContainer {
             }
         }
         return this;
+    }
+
+    /**
+     * Collect the problems in the argument into this problem collector,
+     * and pass-through the argument's stored value.
+     *
+     * <p>Allows for collecting values without needing the builder pattern.
+     * It strips off {@literal null} safety.
+     *
+     * <p>This counts as an observation on the passed-in value.
+     *
+     * @param value problem-wrapped value
+     * @param <T> collection type value
+     * @return the value contained; possibly null if it contains a null
+     *      value, or if the container has problems.
+     * @since 2.4
+     */
+    @Nullable
+    public <T> T collect(@Nonnull final ValuedProblemContainer<T> value) {
+        // Collection counts as an observation.  To ensure this counts as an
+        // observation, perform explicit validation checking.
+        if (value.isProblem()) {
+            addAll(value.validProblems());
+        }
+        return value.getValue();
+    }
+
+    /**
+     * Collect the problems in the argument into this problem collector,
+     * and pass-through the argument's stored value as an Optional type.
+     *
+     * <p>Allows for collecting values without needing the builder pattern.
+     * It strips off {@literal null} safety knowledge and replaces it with
+     * Optional's null checking.
+     *
+     * <p>This counts as an observation on the passed-in value.
+     *
+     * @param value problem-wrapped value
+     * @param <T> collection type value
+     * @return the value contained; possibly null if it contains a null
+     *      value, or if the container has problems.
+     * @since 2.4
+     */
+    @Nonnull
+    public <T> Optional<T> collectOptional(@Nonnull final ValuedProblemContainer<T> value) {
+        // Collection counts as an observation.  To ensure this counts as an
+        // observation, perform explicit validation checking.
+        if (value.isProblem()) {
+            addAll(value.validProblems());
+        }
+        return Optional.ofNullable(value.getValue());
     }
 
     /**

@@ -446,8 +446,7 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
     public <R> RetNullable<R> nullOrMap(
             @Nonnull final NonnullParamFunction<T, R> func) {
         if (this.value == null) {
-            //noinspection unchecked
-            return (RetNullable<R>) this;
+            return nullCast();
         }
         // Pass the observation ball to the returned value.
         this.listener.onObserved();
@@ -459,8 +458,7 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
     public <R> RetNullable<R> nullOrThenNullable(
             @Nonnull final NonnullFunction<T, RetNullable<R>> func) {
         if (this.value == null) {
-            //noinspection unchecked
-            return (RetNullable<R>) this;
+            return nullCast();
         }
         // Pass the observation ball to the returned value.
         this.listener.onObserved();
@@ -526,4 +524,11 @@ public class MonitoredReturnValue<T> implements RetVal<T>, RetNullable<T>, RetVo
     public String toString() {
         return "Ret(value: " + this.value + ")";
     }
+
+    // Map this value to another type.  Only call if "this.value" is null.
+    @SuppressWarnings("unchecked")
+    private <R> RetNullable<R> nullCast() {
+        return (RetNullable<R>) this;
+    }
+
 }
